@@ -2,19 +2,20 @@ import mongoose from 'mongoose';
 
  const TargetSchema = new mongoose.Schema({
   name: {
-    type: String,
-    required: true,
-  },
-  status: {
-    type: Boolean,
-    default: true,
-  },
+      type: String,
+      trim: true,
+      required: [true, "Name is required"],
+    },
   point:{
     type: Number,
-    required:true,
-    default:0}
+    required: [true, "Point is required"],
+    default:0
+  },
+   status: {
+    type: String,
+    enum: ['Active', 'inactive']
+  },
   
 }, { timestamps: true })
 
-
-export const TargetModel=model("Target",TargetSchema)
+  export default mongoose.model('Target', TargetSchema);
