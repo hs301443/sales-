@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import User from '../../models/modelschema/User.js';
 import { BadRequest } from '../../Errors/BadRequest.js';
 import { SuccessResponse } from '../../utils/response.js';
+import  { generateJWT }  from '../../middlewares/generateJWT.js';
 
 
 export const login = asyncHandler(async (req, res) => {
@@ -12,7 +13,7 @@ export const login = asyncHandler(async (req, res) => {
     throw new BadRequest('Incorrect email or password');
   }
 
-//  const token = user.getSignedJwtToken();
+ const token = await generateJWT({id: user.id, role: user.role});
 
-  return SuccessResponse(res, { message: 'User logged in successfully'}, 200);
+  return SuccessResponse(res, { message: 'User logged in successfully', token}, 200);
 });
