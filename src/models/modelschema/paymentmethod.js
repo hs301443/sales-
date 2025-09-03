@@ -2,19 +2,22 @@ import mongoose from 'mongoose';
 
 const PaymentMethodSchema = new mongoose.Schema({
   name: {
-    type: String,
-    required: true,
-  },
+      type: String,
+      trim: true,
+      required: [true, "Name is required"],
+    },
   description: {
     type: String,
-    required: true,
+    required: [true, "Description is required"],
   },
     status: {
     type: Boolean,
     default: true,
   },
-  logo: {
+  logo_url: {
     type: String,
     required: true,
   }
 }, { timestamps: true });
+
+export default mongoose.model('PaymentMethod', PaymentMethodSchema);

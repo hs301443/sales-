@@ -4,6 +4,7 @@ import userRouter from "./userRoutes.js";
 import targetRouter from "./targetRoutes.js";
 import sourceRouter from "./sourceRoutes.js";
 import activityRouter from "./activityRoutes.js";
+import paymentMethodRouter from "./paymentMethodRoutes.js";
 
 export const route = Router();
 
@@ -12,5 +13,6 @@ route.use("/users", userRouter);
 route.use("/targets", targetRouter);
 route.use("/sources", sourceRouter);
 route.use("/activities", activityRouter);
+route.use("/payment-methods", paymentMethodRouter);
 
 export default route;
