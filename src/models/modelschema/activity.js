@@ -2,9 +2,10 @@ import mongoose from 'mongoose';
 
  const ActivitySchema = new mongoose.Schema({
   name: {
-    type: String,
-    required: true,
-  }, 
+      type: String,
+      trim: true,
+      required: [true, "Name is required"],
+    },
   status: {
     type: Boolean,
     default: true,
@@ -12,4 +13,4 @@ import mongoose from 'mongoose';
 }, { timestamps: true })
 
 
-export const ActivityModel=model("Activity",ActivitySchema)
+export default mongoose.model('Activity', ActivitySchema);
