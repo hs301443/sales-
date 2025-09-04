@@ -11,6 +11,7 @@ import salesPointRouter from "./salesPointRoutes.js";
 import leaderRouter from "./leaderRoutes.js";
 import salesRouter from "./salesRoutes.js";
 import leadRouter from "./leadRoutes.js";
+import paymentRouter from "./paymentRoutes.js";
 
 export const route = Router();
 
@@ -26,5 +27,6 @@ route.use("/approve-sale", salesPointRouter);
 route.use("/leaders", leaderRouter);
 route.use("/sales", salesRouter);
 route.use("/leads", leadRouter);
+route.use("/payments", paymentRouter);
 
 export default route;
