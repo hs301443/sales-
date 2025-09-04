@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Target'
   },
+  leader_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   created_at: {
     type: Date,
     default: Date.now
