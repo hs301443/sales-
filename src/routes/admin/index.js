@@ -7,6 +7,10 @@ import activityRouter from "./activityRoutes.js";
 import paymentMethodRouter from "./paymentMethodRoutes.js";
 import productRouter from "./productRoutes.js"
 import offerRouter from "./offerRoutes.js";
+import salesPointRouter from "./salesPointRoutes.js";
+import leaderRouter from "./leaderRoutes.js";
+import salesRouter from "./salesRoutes.js";
+import leadRouter from "./leadRoutes.js";
 
 export const route = Router();
 
@@ -18,5 +22,9 @@ route.use("/activities", activityRouter);
 route.use("/payment-methods", paymentMethodRouter);
 route.use("/products", productRouter);
 route.use("/offers", offerRouter);
+route.use("/approve-sale", salesPointRouter);
+route.use("/leaders", leaderRouter);
+route.use("/sales", salesRouter);
+route.use("/leads", leadRouter);
 
 export default route;

@@ -48,4 +48,11 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+userSchema.pre('save', async function(next) {
+  if (this.isNew && !this.leader_id) {
+    this.leader_id = this._id;
+  }
+  next();
+});
+
 export default mongoose.model('User', userSchema);
