@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'; 
 
-const PaymentSchema = new mongoose.Schema({
+const LeadSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, "name is required"],
@@ -41,4 +41,4 @@ const PaymentSchema = new mongoose.Schema({
     },
 });
 
-export default mongoose.model('Lead', PaymentSchema);
+export default mongoose.model('Lead', LeadSchema);

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'; 
 
-const PaymentSchema = new mongoose.Schema({
+const ScheduledContactsSchema = new mongoose.Schema({
     lead_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Lead'
@@ -23,4 +23,4 @@ const PaymentSchema = new mongoose.Schema({
     },
 });
 
-export default mongoose.model('ScheduledContacts', PaymentSchema);
+export default mongoose.model('ScheduledContacts', ScheduledContactsSchema);

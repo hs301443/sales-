@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'; 
 
-const PaymentSchema = new mongoose.Schema({
+const CommisionSchema = new mongoose.Schema({
     point_threshlod: {
         type: Number,
         required: [true, "Point Threshlod is required"],
@@ -24,4 +24,4 @@ const PaymentSchema = new mongoose.Schema({
     },
 });
 
-export default mongoose.model('Commision', PaymentSchema);
+export default mongoose.model('Commision', CommisionSchema);
