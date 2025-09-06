@@ -1,9 +1,9 @@
 import mongoose from 'mongoose'; 
 
-const CommisionSchema = new mongoose.Schema({
-    point_threshlod: {
+const CommissionSchema = new mongoose.Schema({
+    point_threshold: {  
         type: Number,
-        required: [true, "Point Threshlod is required"],
+        required: [true, "Point Threshold is required"],
     },
     amount: {
         type: Number,
@@ -11,7 +11,7 @@ const CommisionSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['precentage', 'fixed'],
+        enum: ['percentage', 'fixed'], 
         required: [true, 'You Must Select Type']
     },
     level_name: {
@@ -24,4 +24,4 @@ const CommisionSchema = new mongoose.Schema({
     },
 });
 
-export default mongoose.model('Commision', CommisionSchema);
+export default mongoose.model('Commission', CommissionSchema);
