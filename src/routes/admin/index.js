@@ -12,6 +12,8 @@ import leaderRouter from "./leaderRoutes.js";
 import salesRouter from "./salesRoutes.js";
 import leadRouter from "./leadRoutes.js";
 import paymentRouter from "./paymentRoutes.js";
+import salesManagementRoutes from "./salesManagementRoutes.js";
+import commissionRoutes from "./commissionRoutes.js";
 
 export const route = Router();
 
@@ -28,5 +30,7 @@ route.use("/leaders", leaderRouter);
 route.use("/sales", salesRouter);
 route.use("/leads", leadRouter);
 route.use("/payments", paymentRouter);
+route.use("/sales-management", salesManagementRoutes);
+route.use("/commissions", commissionRoutes);
 
 export default route;
