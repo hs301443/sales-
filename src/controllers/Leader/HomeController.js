@@ -1,7 +1,8 @@
 import User from '../../models/modelschema/User.js';
-import SalesPoint from '../../models/modelschema/SalesPoint.js';
+import SalesPoint from '../../models/modelschema/salesPoint.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
+import mongoose from 'mongoose';
 
 export const viewHome = asyncHandler(async (req, res) => {
   try {
@@ -109,6 +110,6 @@ export const viewHome = asyncHandler(async (req, res) => {
     ]);
     return res.status(200).json({ total_target, salesPoint, sales });
   } catch (error) {
-    return ErrorResponse(res, error.message, 400);
+    return ErrorResponse(res, 400, error.message);
   }
 });

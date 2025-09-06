@@ -1,7 +1,8 @@
 import User from '../../models/modelschema/User.js'; 
-import Lead from '../../models/modelschema/Lead.js'; 
+import Lead from '../../models/modelschema/lead.js'; 
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
+import mongoose from 'mongoose';
 
 export const viewLead = asyncHandler(async (req, res) => {
   try {
@@ -27,14 +28,14 @@ export const viewLead = asyncHandler(async (req, res) => {
     { $unwind: "$leader" },
     {
       $match: {
-        "leader.id": userId
+        "leader._id": new mongoose.Types.ObjectId(userId)
       }
     }
   ]);
 
     return res.status(200).json({ leads });
   } catch (error) {
-    return ErrorResponse(res, error.message, 400);
+    return ErrorResponse(res, 400, error.message, );
   }
 });
 
