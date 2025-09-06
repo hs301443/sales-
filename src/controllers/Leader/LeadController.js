@@ -48,10 +48,12 @@ export const transferLead = asyncHandler(async (req, res) => {
 
       const salesIds = sales.map(s => s._id);
 
-      await Lead.updateMany(
+      await Lead.updateOne(
         { sales_id: { $in: salesIds },
           _id: id},
-        { $set: { sales_id: salesId } }
+        { $set: { sales_id: salesId,
+          transfer: true,
+         } }
       );
 
       res.json({ message: "Sales is transfered successfully" });

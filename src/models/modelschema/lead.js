@@ -1,3 +1,4 @@
+import { types } from 'joi';
 import mongoose from 'mongoose'; 
 
 const LeadSchema = new mongoose.Schema({
@@ -30,6 +31,10 @@ const LeadSchema = new mongoose.Schema({
     activity_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Activity'
+    },
+    transfer: {
+        type: Boolean,
+        default: false,
     },
     source_id: {
         type: mongoose.Schema.Types.ObjectId,
