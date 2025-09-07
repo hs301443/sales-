@@ -1,5 +1,5 @@
 import express from 'express';
-import { viewLead, viewTransferLead, viewDemoLead, viewApproveLead, viewRejectLead, createLead, updateLead, deleteLead } from '../../controllers/Sales/LeadController.js';
+import { viewLead, viewTransferLead, viewDemoLead, viewApproveLead, viewRejectLead, getLeadById, createLead, updateLead, deleteLead } from '../../controllers/Sales/LeadController.js';
 import { verifyToken } from '../../middlewares/verifyToken.js';
 import { verifyRole } from '../../middlewares/verifyRole.js';
 import { Roles } from '../../utils/Roles.js';
