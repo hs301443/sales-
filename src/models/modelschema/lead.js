@@ -1,4 +1,3 @@
-import { types } from 'joi';
 import mongoose from 'mongoose'; 
 
 const LeadSchema = new mongoose.Schema({

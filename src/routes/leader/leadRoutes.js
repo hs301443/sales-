@@ -1,10 +1,10 @@
 import express from 'express';
-import { viewLead, transferLead } from '../../controllers/Leader/LeadController.js';
+import { viewLead, transferLead, viewCompanyLead, determineSales } from '../../controllers/Leader/LeadController.js';
 import { verifyToken } from '../../middlewares/verifyToken.js';
 import { verifyRole } from '../../middlewares/verifyRole.js';
 import { Roles } from '../../utils/Roles.js';
 import { validate } from '../../middlewares/validation.js';
-import { transferLead } from '../../validation/leader/leadValidation.js';
+import { transferLeadSchema } from '../../validation/leader/leadValidation.js';
 
 const router = express.Router();
   
@@ -19,7 +19,7 @@ router.use(verifyRole(Roles.LEADER));
 router.get('/', viewLead);
 
 // POST /api/user/leads/transfer/:userId - Transfer leads to another user
-router.post('/transfer/:userId', validate(transferLead), transferLead);
+router.post('/transfer/:userId', validate(transferLeadSchema), transferLead);
 
 router.get('/company', viewCompanyLead);
 router.post('/determine_sales/:userId', validate(transferLead), determineSales);
