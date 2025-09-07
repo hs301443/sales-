@@ -22,6 +22,6 @@ router.get('/', viewLead);
 router.post('/transfer/:userId', validate(transferLeadSchema), transferLead);
 
 router.get('/company', viewCompanyLead);
-router.post('/determine_sales/:userId', validate(transferLead), determineSales);
+router.post('/determine_sales/:userId', validate(transferLeadSchema), determineSales);
 
 export default router;
