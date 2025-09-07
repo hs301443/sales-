@@ -1,4 +1,4 @@
-import Activity from '../../models/modelschema/Activity.js';
+import Activity from '../../models/modelschema/activity.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
