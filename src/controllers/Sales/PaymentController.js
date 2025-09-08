@@ -1,3 +1,4 @@
+import Payment from '../../models/modelschema/payment.js'; 
 import Sales from '../../models/modelschema/sales.js'; 
 import Product from '../../models/modelschema/product.js'; 
 import Offer from '../../models/modelschema/Offer.js'; 
@@ -34,21 +35,45 @@ export const viewPayment = asyncHandler(async (req, res) => {
     .select('_id name');
     const offers = Offer.find({status: true})
     .select('_id name');
-
+    const leads = Lead.find({$in: ['intersted', 'negotiation', 'demo_request', 'demo_done']})
+    .select('_id name phone');
+    const payment_methodes = PaymentMethod.find()
+    .select('_id name');
+    
     const pending = pendingSales.filter(sale => sale.status === 'Pending');
     const history = pendingSales.filter(sale => sale.status !== 'Pending');
 
-    return res.status(200).json({ pending, history });
+    return res.status(200).json({ pending, history, products, offers, leads, payment_methodes });
   } catch (error) {
     return ErrorResponse(res, error.message, 400);
   }
 });
 
 export const addPayment = asyncHandler(async (req, res) => {
-  try {
+  try { 
+      // sales_id
+    const {lead_id, product_id, offer_id, payment_method_id, amount, item_type} = req.body;
+    const userId = req.currentUser.id;
+    const payment = await Payment.create({
+      lead_id,
+      sales_id: userId,
+      product_id,
+      offer_id,
+      payment_method_id,
+      amount,
+    });
+    await Sales.create({
+      lead_id,
+      sales_id: userId,
+      product_id,
+      offer_id,
+      payment_id: payment._id,
+      item_type,
+      offer_id,
+    });
 
-    return res.status(200).json({ pending, history });
+    return res.status(200).json({ 'success' : 'You add payment success' });
   } catch (error) {
     return ErrorResponse(res, error.message, 400);
   }
-});
+}); 
