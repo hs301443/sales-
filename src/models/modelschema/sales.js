@@ -33,7 +33,7 @@ const SalesSchema = new mongoose.Schema({
         type: String,
         enum: ['Pending', 'Approve', 'Reject'],
         default: 'Pending'
-    },
+    }, 
 });
 
 export default mongoose.model('Sales', SalesSchema);

@@ -2,7 +2,7 @@ import Offer from '../../models/modelschema/Offer.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
-export const viewProduct = asyncHandler(async (req, res) => {
+export const viewOffer = asyncHandler(async (req, res) => {
   try {
     const now = new Date();
     const offers = await Offer.find({
@@ -10,7 +10,7 @@ export const viewProduct = asyncHandler(async (req, res) => {
       end_date: { $gte: now }
     })
     .populate('product_id');
-    offers = offers.map(function(item){
+    offers = offers.map((item) => {
       return {
         name: item.name,
         description: item.description,
