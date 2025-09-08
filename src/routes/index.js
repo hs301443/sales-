@@ -5,6 +5,9 @@ import authRouter from './auth/authRoutes.js';
 import homeRouter from './leader/homeRoutes.js';
 import leadRouter from './leader/leadRoutes.js';
 import salesRouter from './sales/leadRoutes.js'
+import offerRouter from './sales/offerRoutes.js';
+import productRouter from './sales/productRoutes.js';
+import paymentRouter from './sales/paymentRoutes.js';
 
 const route = Router();
 
@@ -17,6 +20,14 @@ route.use('/leader', homeRouter);
 route.use('/leader/leads', leadRouter);
 
 route.use('/sales/leads', salesRouter);
+
+route.use('/sales/offers', offerRouter);
+
+route.use('/sales/products', productRouter);
+
+route.use('/sales/payments', paymentRouter);
+
+
 
 
 export default route;

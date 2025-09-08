@@ -1,51 +1,86 @@
 import Payment from '../../models/modelschema/payment.js'; 
 import Sales from '../../models/modelschema/sales.js'; 
-import Product from '../../models/modelschema/product.js'; 
+import Product from '../../models/modelschema/Product.js'; 
 import Offer from '../../models/modelschema/Offer.js'; 
 import Lead from '../../models/modelschema/lead.js'; 
-import PaymentMethod from '../../models/modelschema/paymentmethod.js'; 
+import PaymentMethod from '../../models/modelschema/PaymentMethod.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
 export const viewPayment = asyncHandler(async (req, res) => {
   try {
-    const pendingSales = Sales.find({
-      status: 'Pending'
-    })
-    .sort({sale_date: -1})
-    .populate({
-      path: 'offer_id',
-      populate: 'product_id'
-    })
-    .populate('lead_id')
-    .populate('payment_method_id')
-    .populate('product_id');
-    pendingSales = (await pendingSales).map((item) => {
+    
+    const [
+      pendingSales,
+      products,
+      offers,
+      leads,
+      payment_methods
+    ] = await Promise.all([
+      Sales.find({
+        status: 'Pending'
+      })
+      .sort({sale_date: -1})
+      .populate({
+        path: 'offer_id',
+        populate: 'product_id'
+      })
+      .populate('lead_id')
+      .populate('payment_method_id')
+      .populate('product_id')
+      .lean(), 
+      
+      Product.find({status: true})
+      .select('_id name')
+      .lean(),
+      
+      Offer.find({status: true})
+      .select('_id name')
+      .lean(),
+      
+      Lead.find({status: {$in: ['intersted', 'negotiation', 'demo_request', 'demo_done']}})
+      .select('_id name phone')
+      .lean(),
+      
+      PaymentMethod.find()
+      .select('_id name')
+      .lean()
+    ]);
+
+    const transformedSales = pendingSales.map((item) => {
       return {
-        lead_name : item?.lead_id?.name,
-        lead_phone : item?.lead_id?.phone,
-        product : item?.product_id?.name ?? item?.offer_id?.product_id?.name,
-        offer : item?.offer_id?.name,
-        payment_method : item?.payment_id?.payment_method_id?.name,
-        amount : item?.amount,
-        status: item.status
+        lead_name: item?.lead_id?.name || 'N/A',
+        lead_phone: item?.lead_id?.phone || 'N/A',
+        product: item?.product_id?.name || item?.offer_id?.product_id?.name || 'N/A',
+        offer: item?.offer_id?.name || 'N/A',
+        payment_method: item?.payment_method_id?.name || 'N/A',
+        amount: item?.amount || 0,
+        status: item.status || 'Unknown'
+      };
+    });
+
+    const pending = transformedSales.filter(sale => sale.status === 'Pending');
+    const history = transformedSales.filter(sale => sale.status !== 'Pending');
+
+    return res.status(200).json({ 
+      pending, 
+      history, 
+      products, 
+      offers, 
+      leads, 
+      payment_methods 
+    });
+
+  } catch (error) {
+    console.error('Error in viewPayment:', error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: 'Internal server error',
+        details: error.message
       }
     });
-    const products = Product.find({status: true})
-    .select('_id name');
-    const offers = Offer.find({status: true})
-    .select('_id name');
-    const leads = Lead.find({$in: ['intersted', 'negotiation', 'demo_request', 'demo_done']})
-    .select('_id name phone');
-    const payment_methodes = PaymentMethod.find()
-    .select('_id name');
-    
-    const pending = pendingSales.filter(sale => sale.status === 'Pending');
-    const history = pendingSales.filter(sale => sale.status !== 'Pending');
-
-    return res.status(200).json({ pending, history, products, offers, leads, payment_methodes });
-  } catch (error) {
-    return ErrorResponse(res, error.message, 400);
   }
 });
 
