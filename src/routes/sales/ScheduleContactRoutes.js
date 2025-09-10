@@ -1,0 +1,15 @@
+import express from 'express';
+import { createScheduledContact, getMyScheduledContacts } from '../../controllers/Sales/ScheduledContactController.js';
+import { verifyToken } from '../../middlewares/verifyToken.js';
+import { verifyRole } from '../../middlewares/verifyRole.js';
+import { Roles } from '../../utils/Roles.js';
+
+const router = express.Router();
+
+router.use(verifyToken); 
+router.use(verifyRole(Roles.SALESMAN));
+
+router.route('/schedule-contact').post(createScheduledContact);
+router.route('/my-scheduled-contacts/:sales_id').get(getMyScheduledContacts);
+
+export default router;
