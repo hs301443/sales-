@@ -1,5 +1,6 @@
 import Lead from '../../models/modelschema/lead.js'; 
 import Activity from '../../models/modelschema/Activity.js';
+import User from '../../models/modelschema/User.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
@@ -217,4 +218,103 @@ export const deleteLead = asyncHandler(async (req, res) => {
   } catch (error) {
     return ErrorResponse(res, error.message, 400);
   }
+});
+
+
+export const getSalesmanInterestedLeadsCount = asyncHandler(async (req, res) => {
+  const { sales_id } = req.params;
+  
+    // check sales_id is exist 
+    const sales = await User.findById(sales_id);
+    if (!sales || sales.role !== 'Salesman') {
+      return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
+    }
+  
+  // Count interested leads for specific salesman
+  const interestedCount = await Lead.countDocuments({ 
+    status: 'intersted', 
+    sales_id: sales_id
+  });
+  
+  return SuccessResponse(res, { 
+    message: 'Salesman interested leads count retrieved successfully', 
+    data: { count: interestedCount }
+  }, 200);
+});
+
+
+export const getSalesmanLeadsCount = asyncHandler(async (req, res) => {
+  const { sales_id } = req.params;
+  
+  const salesman = await User.findById(sales_id);
+  if (!salesman || salesman.role !== 'Salesman') {
+    return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
+  }
+
+  const totalLeadsCount = await Lead.countDocuments({ sales_id: sales_id });
+  
+  return SuccessResponse(res, { 
+    message: 'Salesman leads count retrieved successfully', 
+    data: {
+      salesman: {
+        _id: salesman._id,
+        name: salesman.name,
+        email: salesman.email
+      },
+      total_leads: totalLeadsCount
+    }
+  }, 200);
+});
+
+
+export const getSalesTargetsCount = asyncHandler(async (req, res) => {
+  const { sales_id } = req.params;
+  
+  // check sales_id is exist 
+  const sales = await User.findById(sales_id);
+  if (!sales || sales.role !== 'Salesman') {
+    return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
+  }
+
+  // Count users with role 'Salesman' who have a target assigned
+  const salesWithTargetsCount = await User.countDocuments({ 
+    role: 'Salesman', 
+    target_id: { $exists: true, $ne: null } 
+  });
+  
+  // Count total salesmen
+  const totalSalesmenCount = await User.countDocuments({ role: 'Salesman' });
+  
+  // Count salesmen without targets
+  const salesWithoutTargetsCount = totalSalesmenCount - salesWithTargetsCount;
+  
+  return SuccessResponse(res, { 
+    message: 'Sales targets count retrieved successfully', 
+    data: {
+      with_targets: salesWithTargetsCount,
+      without_targets: salesWithoutTargetsCount,
+      total_salesmen: totalSalesmenCount
+    }
+  }, 200);
+});
+
+
+export const getSalesTargetsDetails = asyncHandler(async (req, res) => {
+  const { sales_id } = req.params;
+  
+  // check sales_id is exist 
+  const sales = await User.findById(sales_id);
+  if (!sales || sales.role !== 'Salesman') {
+    return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
+  }
+
+  // Get the specific salesman with target information
+  const salesWithTargets = await User.findById(sales_id)
+    .populate('target_id', 'name point status')
+    .select('name email role target_id');
+
+  return SuccessResponse(res, { 
+    message: 'Sales targets details retrieved successfully', 
+    data: salesWithTargets
+  }, 200);
 });
