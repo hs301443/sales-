@@ -12,6 +12,15 @@ export const createLeader = asyncHandler(async (req, res) => {
     status,
   } = req.body;
 
+  //check if email exist
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email already exists',
+    });
+  }
+
   const leader = await User.create({
     name,
     email,
@@ -42,7 +51,7 @@ export const getLeaderById = asyncHandler(async (req, res) => {
     throw new NotFound('Leader not found');
   }
 
-  return SuccessResponse(res, { message: 'Leader retrieved successfully', data: leader }, 200);
+  return SuccessResponse(res, { message: 'Leader retrieved successfully', data : [leader] }, 200);
 });
 
 export const updateLeader = asyncHandler(async (req, res) => {
@@ -76,7 +85,7 @@ export const updateLeader = asyncHandler(async (req, res) => {
 
 export const deleteLeader = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const leader = await User.findByIdAndRemove(id);
+  const leader = await User.findByIdAndDelete(id);
 
   if (!leader) {
     throw new NotFound('Leader not found');

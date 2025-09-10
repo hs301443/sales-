@@ -78,7 +78,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
 export const deleteProduct = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const product = await Product.findByIdAndRemove(id);
+  const product = await Product.findByIdAndDelete(id);
 
   if (!product) {
     throw new NotFound('Product not found');

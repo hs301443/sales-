@@ -119,7 +119,7 @@ export const updatePayment = asyncHandler(async (req, res) => {
 
 export const deletePayment = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const payment = await Payment.findByIdAndRemove(id);
+  const payment = await Payment.findByIdAndDelete(id);
 
   if (!payment) {
     throw new NotFound('Payment not found');

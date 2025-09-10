@@ -51,7 +51,7 @@ export const updateActivity = asyncHandler(async (req, res) => {
 
 export const deleteActivity = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const activity = await Activity.findByIdAndRemove(id);
+  const activity = await Activity.findByIdAndDelete(id);
 
   if (!activity) {
     throw new ErrorResponse('Activity not found', 404);

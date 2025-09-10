@@ -55,7 +55,7 @@ export const updateTarget = asyncHandler(async (req, res) => {
 
 export const deleteTarget = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const target = await Target.findByIdAndRemove(id);
+  const target = await Target.findByIdAndDelete(id);
 
   if (!target) {
     throw new ErrorResponse('Target not found', 404);

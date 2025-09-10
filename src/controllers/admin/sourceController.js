@@ -52,7 +52,7 @@ export const updateSource = asyncHandler(async (req, res) => {
 
 export const deleteSource = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const source = await Source.findByIdAndRemove(id);
+  const source = await Source.findByIdAndDelete(id);
 
   if (!source) {
     throw new ErrorResponse('Source not found', 404);

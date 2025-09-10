@@ -30,11 +30,22 @@ export const createLead = asyncHandler(async (req, res) => {
         return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
     }
 
+    if (type === 'company' && !source_id) {
+    return ErrorResponse(res, 400, { message: 'Source ID is required for company type' });
+  }
+
+  // If type is 'sales', source_id should not be provided
+  if (type === 'sales' && source_id) {
+    return ErrorResponse(res, 400, { message: 'Source ID should not be provided for sales type' });
+  }
+
   // check source_id is exist
+  if(source_id){
     const source = await Source.findById(source_id);
     if (!source) {
         return ErrorResponse(res, 400, { message: 'Invalid source_id' });
     }
+  }
 
   const lead = await Lead.create({
     name,
@@ -44,7 +55,7 @@ export const createLead = asyncHandler(async (req, res) => {
     status,
     sales_id,
     activity_id,
-    source_id,
+    source_id: type === 'company' ? source_id : null,
   });
 
   return SuccessResponse(res, { message: 'Lead created successfully' }, 201);
@@ -110,7 +121,7 @@ export const updateLead = asyncHandler(async (req, res) => {
 
 export const deleteLead = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const lead = await Lead.findByIdAndRemove(id);
+  const lead = await Lead.findByIdAndDelete(id);
 
   if (!lead) {
     throw new NotFound('Lead not found');

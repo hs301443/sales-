@@ -75,7 +75,7 @@ export const updateSales = asyncHandler(async (req, res) => {
 
 export const deleteSales = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const sales = await User.findByIdAndRemove(id);
+  const sales = await User.findByIdAndDelete(id);
 
   if (!sales) {
     throw new NotFound('Sales not found');

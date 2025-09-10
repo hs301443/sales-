@@ -93,7 +93,7 @@ export const updateOffer = asyncHandler(async (req, res) => {
 
 export const deleteOffer = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const offer = await Offer.findByIdAndRemove(id);
+  const offer = await Offer.findByIdAndDelete(id);
 
   if (!offer) {
     throw new NotFound('Offer not found');

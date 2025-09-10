@@ -39,10 +39,11 @@ export const createUser = asyncHandler(async (req, res) => {
   return SuccessResponse(res, { message: 'User created successfully' }, 201);
 });
 
-
 export const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find()
+    .select('-password -role -__v')
     .populate('target_id', 'name point status')
+    .populate('leader_id', 'name') 
     .sort({ created_at: -1 });
 
   return SuccessResponse(res, { message: 'Users retrieved successfully', data: users }, 200);
@@ -102,7 +103,7 @@ export const updateUser = asyncHandler(async (req, res) => {
 
 export const deleteUser = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const user = await User.findByIdAndRemove(id);
+  const user = await User.findByIdAndDelete(id);
 
   if (!user) {
     throw new NotFound('User not found');
