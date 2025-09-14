@@ -105,6 +105,28 @@ export const updateLead = asyncHandler(async (req, res) => {
     source_id,
   } = req.body;
 
+  if(sales_id){
+  const sales = await User.findById(sales_id);
+  if (!sales || sales.role !== 'Salesman') {
+    return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
+  }
+}
+
+    if(activity_id){
+    const activity = await Activity.findById(activity_id);
+    if (!activity) {
+        return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
+    }
+  }
+
+  if(source_id){
+    const source = await Source.findById(source_id);
+    if (!source) {
+        return ErrorResponse(res, 400, { message: 'Invalid source_id' });
+    }
+  }
+
+
   lead.name = name || lead.name;
   lead.phone = phone || lead.phone;
   lead.address = address || lead.address;

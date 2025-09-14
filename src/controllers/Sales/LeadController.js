@@ -12,7 +12,7 @@ export const viewLead = asyncHandler(async (req, res) => {
       status: {$in:['intersted', 'negotiation']},
       transfer: false,
     })
-    .select('_id name phone address status created_at')
+    .select('_id name phone address status type created_at')
     .sort({ created_at: -1 })
     .populate('source_id')
     .populate('activity_id');
@@ -21,7 +21,7 @@ export const viewLead = asyncHandler(async (req, res) => {
       status: {$in:['intersted', 'negotiation']},
       transfer: false,
     })
-    .select('_id name phone address status created_at')
+    .select('_id name phone address status type created_at')
     .sort({ created_at: -1 }) 
     .populate('activity_id');
 
@@ -171,14 +171,16 @@ export const createLead = asyncHandler(async (req, res) => {
 });
 
 export const updateLead = asyncHandler(async (req, res) => {
-  try {
     const userId = req.currentUser.id;
-    const {name, phone, address, activity_id} = req.body
+    const {name, phone, address, status, activity_id} = req.body
+    
+    if(activity_id){
     const activity = await Activity.findById(activity_id);
     if (!activity) {
         return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
     }
-    const lead = await Lead.findOne({_id: id, sales_id: userId});
+  }
+    const lead = await Lead.findOne({sales_id: userId});
   
     if (!lead) {
       throw new NotFound('Lead not found');
@@ -192,9 +194,6 @@ export const updateLead = asyncHandler(async (req, res) => {
     await lead.save();
 
     return res.status(200).json({ 'success': 'You update lead success' });
-  } catch (error) {
-    return ErrorResponse(res, error.message, 400);
-  }
 });
 
 export const deleteLead = asyncHandler(async (req, res) => {

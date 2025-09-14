@@ -41,7 +41,7 @@ export const createUser = asyncHandler(async (req, res) => {
 
 export const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find()
-    .select('-password -role -__v')
+    .select('-password -__v')
     .populate('target_id', 'name point status')
     .populate('leader_id', 'name') 
     .sort({ created_at: -1 });
@@ -52,6 +52,9 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 export const getUserById = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const user = await User.findById(id)
+    .select('-password -__v')
+    .populate('target_id', 'name point status')
+    .populate('leader_id', 'name') 
     .populate('target_id', 'name point status');
 
   if (!user) {

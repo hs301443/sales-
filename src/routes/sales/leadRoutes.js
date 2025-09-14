@@ -24,7 +24,7 @@ router.route('/leadsCount/:sales_id').get(getSalesmanLeadsCount);
 
 router.route('/:id')
     .get(getLeadById)
-    .put(validate(leadValidation), updateLead)
+    .put(updateLead)
     .delete(deleteLead);
 
 export default router;
