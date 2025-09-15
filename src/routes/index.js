@@ -9,6 +9,7 @@ import offerRouter from './sales/offerRoutes.js';
 import productRouter from './sales/productRoutes.js';
 import paymentRouter from './sales/paymentRoutes.js';
 import ScheduledContactRoutes from './sales/ScheduleContactRoutes.js';
+import commissionRoutes from './sales/commissionRoutes.js';
 
 const route = Router();
 
@@ -29,6 +30,8 @@ route.use('/sales/products', productRouter);
 route.use('/sales/payments', paymentRouter);
 
 route.use('/sales', ScheduledContactRoutes);
+
+route.use('/sales', commissionRoutes);
 
 
 

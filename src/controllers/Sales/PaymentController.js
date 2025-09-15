@@ -9,25 +9,29 @@ import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
 export const viewPayment = asyncHandler(async (req, res) => {
   try {
+    const sales_id = req.currentUser.id; 
     
     const [
-      pendingSales,
+      allSales,  
       products,
       offers,
       leads,
       payment_methods
     ] = await Promise.all([
       Sales.find({
-        status: 'Pending'
-      })
+        sales_id: sales_id 
+      })  
       .sort({sale_date: -1})
       .populate({
         path: 'offer_id',
         populate: 'product_id'
       })
       .populate('lead_id')
-      .populate('payment_method_id')
       .populate('product_id')
+      .populate({
+        path: 'payment_id',
+        populate: 'payment_method_id'
+      })
       .lean(), 
       
       Product.find({status: true})
@@ -47,28 +51,29 @@ export const viewPayment = asyncHandler(async (req, res) => {
       .lean()
     ]);
 
-    const transformedSales = pendingSales.map((item) => {
+    const transformedSales = allSales.map((item) => {
       return {
+        _id: item._id,
         lead_name: item?.lead_id?.name || 'N/A',
         lead_phone: item?.lead_id?.phone || 'N/A',
         product: item?.product_id?.name || item?.offer_id?.product_id?.name || 'N/A',
         offer: item?.offer_id?.name || 'N/A',
-        payment_method: item?.payment_method_id?.name || 'N/A',
-        amount: item?.amount || 0,
-        status: item.status || 'Unknown'
+        payment_method: item?.payment_id?.payment_method_id?.name || 'N/A',
+        amount: item?.payment_id?.amount || 0,
+        status: item.status || 'Unknown',
+        sale_date: item.sale_date || 'N/A'
       };
     });
 
+    // Filter sales by status
     const pending = transformedSales.filter(sale => sale.status === 'Pending');
-    const history = transformedSales.filter(sale => sale.status !== 'Pending');
+    const approve = transformedSales.filter(sale => sale.status === 'Approve');
+    const reject = transformedSales.filter(sale => sale.status === 'Reject');
 
     return res.status(200).json({ 
       pending, 
-      history, 
-      products, 
-      offers, 
-      leads, 
-      payment_methods 
+      approve,
+      reject
     });
 
   } catch (error) {

@@ -172,28 +172,40 @@ export const createLead = asyncHandler(async (req, res) => {
 
 export const updateLead = asyncHandler(async (req, res) => {
     const userId = req.currentUser.id;
-    const {name, phone, address, status, activity_id} = req.body
+    const id = req.params.id;
     
-    if(activity_id){
-    const activity = await Activity.findById(activity_id);
-    if (!activity) {
-        return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
-    }
-  }
-    const lead = await Lead.findOne({sales_id: userId});
-  
+    // Find the lead by ID
+    const lead = await Lead.findById(id);
+    
     if (!lead) {
-      throw new NotFound('Lead not found');
+        throw new NotFound('Lead not found');
     }
 
+    // Check if the lead belongs to the current sales user
+    if (lead.sales_id.toString() !== userId) {
+        return ErrorResponse(res, 403, { message: 'You are not authorized to update this lead' });
+    }
+
+    const { name, phone, address, status, activity_id } = req.body;
+
+    // Validate activity_id if provided
+    if (activity_id) {
+        const activity = await Activity.findById(activity_id);
+        if (!activity) {
+            return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
+        }
+    }
+
+    // Update lead fields
     lead.name = name || lead.name;
     lead.phone = phone || lead.phone;
     lead.address = address || lead.address;
     lead.status = status || lead.status;
     lead.activity_id = activity_id || lead.activity_id;
+    
     await lead.save();
 
-    return res.status(200).json({ 'success': 'You update lead success' });
+    return res.status(200).json({ 'success': 'You updated lead successfully' });
 });
 
 export const deleteLead = asyncHandler(async (req, res) => {
@@ -275,24 +287,20 @@ export const getSalesTargetsCount = asyncHandler(async (req, res) => {
     return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
   }
 
-  // Count users with role 'Salesman' who have a target assigned
-  const salesWithTargetsCount = await User.countDocuments({ 
-    role: 'Salesman', 
+  const salesmenWithTargets = await User.find({
+    _id: sales_id, 
     target_id: { $exists: true, $ne: null } 
-  });
-  
-  // Count total salesmen
-  const totalSalesmenCount = await User.countDocuments({ role: 'Salesman' });
-  
-  // Count salesmen without targets
-  const salesWithoutTargetsCount = totalSalesmenCount - salesWithTargetsCount;
+  }).populate('target_id');
+
+  // Calculate total target value
+  const totalTarget = salesmenWithTargets.reduce((sum, salesman) => {
+    return sum + (salesman.target_id?.point || 0);
+  }, 0);
   
   return SuccessResponse(res, { 
     message: 'Sales targets count retrieved successfully', 
     data: {
-      with_targets: salesWithTargetsCount,
-      without_targets: salesWithoutTargetsCount,
-      total_salesmen: totalSalesmenCount
+      total_target: totalTarget
     }
   }, 200);
 });

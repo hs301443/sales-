@@ -19,7 +19,7 @@ router.use(verifyRole(Roles.LEADER));
 router.get('/', viewLead);
 
 // POST /api/user/leads/transfer/:userId - Transfer leads to another user
-router.post('/transfer/:userId', validate(transferLeadSchema), transferLead);
+router.post('/transfer/:id', validate(transferLeadSchema), transferLead);
 
 router.get('/company', viewCompanyLead);
 router.post('/determine_sales/:userId', validate(transferLeadSchema), determineSales);

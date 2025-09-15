@@ -1,4 +1,5 @@
 import Product from '../../models/modelschema/Product.js';
+import Offer from '../../models/modelschema/Offer.js';
 import asyncHandler from 'express-async-handler';
 import { NotFound } from '../../Errors/NotFound.js'
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
@@ -78,11 +79,18 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
 export const deleteProduct = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const product = await Product.findByIdAndDelete(id);
-
+  
+  // First find the product to ensure it exists
+  const product = await Product.findById(id);
+  
   if (!product) {
     throw new NotFound('Product not found');
   }
 
-  return SuccessResponse(res, { message: 'Product deleted successfully' }, 200);
+  // Delete all offers associated with this product
+  await Offer.deleteMany({ product_id: id });
+
+  await Product.findByIdAndDelete(id);
+
+  return SuccessResponse(res, { message: 'Product and its associated offers deleted successfully' }, 200);
 });

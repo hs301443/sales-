@@ -4,25 +4,33 @@ import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
 export const viewHome = asyncHandler(async (req, res) => {
-  try {
-    const sales_id = req.currentUser.id;
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const year = now.getFullYear();
-    const my_points = SalesPoint
-    .findOne({
-      month, year, sales_id
-    });
+        const sales_id = req.currentUser.id;
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+        
+        // Await the SalesPoint query
+        const my_points = await SalesPoint.findOne({
+            month, year, sales_id
+        });
 
-    const commissions = await Commission.find();
-    commissions = commissions.map(item => {
-      return {
-        ...item.toObject(),
-        my_level: item.point_threshold <= my_points
-      };
-    });
-    return res.status(200).json({ commisions });
-  } catch (error) {
-    return ErrorResponse(res, error.message, 400);
-  }
+        let commissions = await Commission.find();
+        
+        // Calculate total points from my_points (assuming my_points has a points field)
+        const totalPoints = my_points ? my_points.points || 0 : 0;
+        
+        commissions = commissions.map(item => {
+            return {
+                ...item.toObject(),
+                my_level: item.point_threshold <= totalPoints
+            };
+        });
+        
+        return SuccessResponse(res, { 
+            message: 'Commissions retrieved successfully', 
+            data: {
+                commissions,
+                my_points: totalPoints
+            }
+        }, 200);
 });

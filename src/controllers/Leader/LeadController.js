@@ -40,28 +40,42 @@ export const viewLead = asyncHandler(async (req, res) => {
 });
 
 export const transferLead = asyncHandler(async (req, res) => {
-  try {
+
       const myId = req.currentUser.id;
-      const { salesId } = req.body.salesId;  
-      const { id } = req.params.id;  
+      const { salesId } = req.body;
+      const { id } = req.params;
 
-      const sales = await User.find({ leader_id: myId }).select("_id");
+      // Check if the current user is a leader and get their sales team
+      const salesTeam = await User.find({ 
+          leader_id: myId, 
+          role: 'Salesman' 
+      }).select("_id name");
 
-      const salesIds = sales.map(s => s._id);
+      if (!salesTeam || salesTeam.length === 0) {
+          return res.status(400).json({ error: "You don't have any sales team members" });
+      }
 
-      await Lead.updateOne(
-        { sales_id: { $in: salesIds },
-          _id: id},
-        { $set: { sales_id: salesId,
-          transfer: true,
-         } }
+      const salesIds = salesTeam.map(s => s._id.toString());
+
+      // Update the lead
+      const result = await Lead.updateOne(
+          { 
+              _id: id,
+              sales_id: { $in: salesIds } 
+          },
+          { 
+              $set: { 
+                  sales_id: salesId,
+                  transfer: true
+              } 
+          }
       );
 
-      res.json({ message: "Sales is transfered successfully" });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Server error" });
-    }
+      if (result.modifiedCount === 0) {
+          return res.status(400).json({ error: "Failed to transfer lead" });
+      }
+
+      return res.status(200).json({ message: "Lead transferred successfully" });
 });
 
 export const viewCompanyLead = asyncHandler(async (req, res) => {
