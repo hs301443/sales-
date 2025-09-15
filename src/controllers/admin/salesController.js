@@ -8,6 +8,7 @@ export const createSales = asyncHandler(async (req, res) => {
     name,
     email,
     password,
+    status,
     leader_id,
   } = req.body;
 
@@ -21,6 +22,7 @@ export const createSales = asyncHandler(async (req, res) => {
     name,
     email,
     password,
+    status: status || 'Active',
     role: 'Salesman',
     leader_id: leader_id,
   });
@@ -30,14 +32,31 @@ export const createSales = asyncHandler(async (req, res) => {
 
 export const getAllSales = asyncHandler(async (req, res) => {
   const sales = await User.find({ role: 'Salesman' })
-    .sort({ created_at: -1 });
+    .select('-password -__v')
+    .populate('leader_id', 'name')
+    .populate('target_id', 'name point status')
+    .sort({ created_at: -1 })
 
-  return SuccessResponse(res, { message: 'Sales retrieved successfully', data: sales }, 200);
+
+   const activeLeaders = await User.find({ 
+    role: 'Sales Leader', 
+    status: 'Active' 
+  })
+  .select('_id name email')
+  .sort({ name: 1 });
+
+  return SuccessResponse(res, { message: 'Sales retrieved successfully', data: {
+      sales,
+      leaderOptions: activeLeaders
+    }}, 200);
 });
 
 export const getSalesById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const sales = await User.findById(id);
+  const sales = await User.findById(id)
+  .select('-password -__v -leader_id')
+  .populate('leader_id', 'name')
+  .populate('target_id', 'name point status')
 
   if (!sales) {
     throw new NotFound('Sales not found');
@@ -58,6 +77,7 @@ export const updateSales = asyncHandler(async (req, res) => {
     name,
     email,
     password,
+    status,
     leader_id,
   } = req.body;
 
@@ -66,8 +86,10 @@ export const updateSales = asyncHandler(async (req, res) => {
   if (password) {
     sales.password = password;
   }
+
   sales.leader_id = leader_id || sales.leader_id;
 
+  sales.status = status || sales.status;
   await sales.save();
 
   return SuccessResponse(res, { message: 'Sales updated successfully' }, 200);

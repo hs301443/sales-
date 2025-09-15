@@ -4,8 +4,8 @@ export const createLeaderSchema = Joi.object().keys({
   name: Joi.string().required().trim(),
   email: Joi.string().required().email().trim(),
   password: Joi.string().required().min(6).trim(),
-  role: Joi.string().required().valid('Sales Leader'),
-  status: Joi.string().optional().valid('Active', 'Inactive'),
+  role: Joi.string().optional().valid('Sales Leader'),
+  status: Joi.string().optional().valid('Active', 'inactive'),
 });
 
 export const updateLeaderSchema = Joi.object().keys({
@@ -13,6 +13,6 @@ export const updateLeaderSchema = Joi.object().keys({
   email: Joi.string().optional().email().trim(),
   password: Joi.string().optional().min(6).trim(),
   role: Joi.string().optional().valid('Sales Leader'),
-  status: Joi.string().optional().valid('Active', 'Inactive'),
+  status: Joi.string().optional().valid('Active', 'inactive'),
 });
 

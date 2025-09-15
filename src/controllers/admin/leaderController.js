@@ -8,7 +8,6 @@ export const createLeader = asyncHandler(async (req, res) => {
     name,
     email,
     password,
-    role,
     status,
   } = req.body;
 
@@ -38,6 +37,8 @@ export const createLeader = asyncHandler(async (req, res) => {
 
 export const getAllLeaders = asyncHandler(async (req, res) => {
   const leaders = await User.find({ role: 'Sales Leader' })
+    .select('-password -__v -leader_id')
+    .populate('target_id', 'name point status')
     .sort({ created_at: -1 });
 
   return SuccessResponse(res, { message: 'Leaders retrieved successfully', data: leaders }, 200);
@@ -45,7 +46,9 @@ export const getAllLeaders = asyncHandler(async (req, res) => {
 
 export const getLeaderById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const leader = await User.findById(id);
+  const leader = await User.findById(id)
+    .select('-password -__v -leader_id')
+    .populate('target_id', 'name point status');
 
   if (!leader) {
     throw new NotFound('Leader not found');
@@ -66,7 +69,6 @@ export const updateLeader = asyncHandler(async (req, res) => {
     name,
     email,
     password,
-    role,
     status,
   } = req.body;
 
