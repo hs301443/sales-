@@ -63,11 +63,11 @@ export const createSale = asyncHandler(async (req, res) => {
 export const getAllSales = asyncHandler(async (req, res) => {
   const sales = await Sales.find({ isDeleted: false })
     .select('-isDeleted')
-    .populate('lead_id', 'name')
-    .populate('sales_id', 'name')
-    .populate('product_id', 'name')
-    .populate('offer_id', 'name')
-    .populate('payment_id', 'amount payment_date')
+    .populate({ path: 'lead_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'product_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'offer_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'payment_id', select: 'amount payment_date', match: { isDeleted: false } })
     .sort({ sale_date: -1 });
 
   return SuccessResponse(res, { message: 'Sales retrieved successfully', data: sales }, 200);
@@ -77,11 +77,11 @@ export const getSaleById = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const sale = await Sales.findOne({ _id: id, isDeleted: false })
     .select('-isDeleted')
-    .populate('lead_id', 'name email phone')
-    .populate('sales_id', 'name email')
-    .populate('product_id', 'name price description')
-    .populate('offer_id', 'name price description')
-    .populate('payment_id', 'amount payment_date payment_method_id');
+    .populate({ path: 'lead_id', select: 'name email phone', match: { isDeleted: false } })
+    .populate({ path: 'sales_id', select: 'name email', match: { isDeleted: false } })
+    .populate({ path: 'product_id', select: 'name price description', match: { isDeleted: false } })
+    .populate({ path: 'offer_id', select: 'name price description', match: { isDeleted: false } })
+    .populate({ path: 'payment_id', select: 'amount payment_date payment_method_id', match: { isDeleted: false } });
 
   if (!sale) {
     throw new NotFound('Sale not found');
@@ -182,10 +182,10 @@ export const getSalesByStatus = asyncHandler(async (req, res) => {
 
   const sales = await Sales.find({ status, isDeleted: false })
     .select('-isDeleted')
-    .populate('lead_id', 'name')
-    .populate('sales_id', 'name')
-    .populate('product_id', 'name')
-    .populate('offer_id', 'name')
+    .populate({ path: 'lead_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'product_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'offer_id', select: 'name', match: { isDeleted: false } })
     .sort({ sale_date: -1 });
 
   return SuccessResponse(res, { 
@@ -205,10 +205,10 @@ export const getSalesBySalesman = asyncHandler(async (req, res) => {
 
   const sales = await Sales.find({ sales_id, isDeleted: false })
     .select('-isDeleted')
-    .populate('lead_id', 'name email')
-    .populate('product_id', 'name price')
-    .populate('offer_id', 'name price')
-    .populate('payment_id', 'amount payment_date')
+    .populate({ path: 'lead_id', select: 'name email', match: { isDeleted: false } })
+    .populate({ path: 'product_id', select: 'name price', match: { isDeleted: false } })
+    .populate({ path: 'offer_id', select: 'name price', match: { isDeleted: false } })
+    .populate({ path: 'payment_id', select: 'amount payment_date', match: { isDeleted: false } })
     .sort({ sale_date: -1 });
 
   return SuccessResponse(res, { 

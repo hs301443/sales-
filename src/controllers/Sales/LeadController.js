@@ -11,19 +11,21 @@ export const viewLead = asyncHandler(async (req, res) => {
       type: 'company',
       status: {$in:['intersted', 'negotiation']},
       transfer: false,
+      isDeleted: false,
     })
     .select('_id name phone address status type created_at')
     .sort({ created_at: -1 })
-    .populate('source_id')
-    .populate('activity_id');
+    .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
     const my_leads = await Lead.find({sales_id: userId,
       type: 'sales',
       status: {$in:['intersted', 'negotiation']},
       transfer: false,
+      isDeleted: false,
     })
     .select('_id name phone address status type created_at')
     .sort({ created_at: -1 }) 
-    .populate('activity_id');
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
 
     return res.status(200).json({ company_leads, my_leads });
   } catch (error) {
@@ -39,19 +41,21 @@ export const viewTransferLead = asyncHandler(async (req, res) => {
       type: 'company',
       status: {$in:['intersted', 'negotiation']},
       transfer: true,
+      isDeleted: false,
     })
     .select('_id name phone address status created_at')
     .sort({ created_at: -1 })
-    .populate('source_id')
-    .populate('activity_id');
+    .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
     const my_leads = await Lead.find({sales_id: userId,
       type: 'sales',
       status: {$in:['intersted', 'negotiation']},
       transfer: true,
+      isDeleted: false,
     })
     .select('_id name phone address status created_at')
     .sort({ created_at: -1 }) 
-    .populate('activity_id');
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
 
     return res.status(200).json({ company_leads, my_leads });
   } catch (error) {
@@ -65,18 +69,20 @@ export const viewDemoLead = asyncHandler(async (req, res) => {
     const company_leads = await Lead.find({sales_id: userId,
       type: 'company',
       status: {$in:['demo_request', 'demo_done']},
+      isDeleted: false,
     })
     .select('_id name phone address status created_at')
     .sort({ created_at: -1 })
-    .populate('source_id')
-    .populate('activity_id');
+    .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
     const my_leads = await Lead.find({sales_id: userId,
       type: 'sales',
       status: {$in:['demo_request', 'demo_done']},
+      isDeleted: false,
     })
     .select('_id name phone address status created_at')
     .sort({ created_at: -1 }) 
-    .populate('activity_id');
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
 
     return res.status(200).json({ company_leads, my_leads });
   } catch (error) {
@@ -91,18 +97,20 @@ export const viewApproveLead = asyncHandler(async (req, res) => {
     const company_leads = await Lead.find({sales_id: userId,
       type: 'company',
       status: 'approve', 
+      isDeleted: false,
     })
     .select('_id name phone address status created_at')
     .sort({ created_at: -1 })
-    .populate('source_id')
-    .populate('activity_id');
+    .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
     const my_leads = await Lead.find({sales_id: userId,
       type: 'sales',
       status: 'approve', 
+      isDeleted: false,
     })
     .select('_id name phone address status created_at')
     .sort({ created_at: -1 }) 
-    .populate('activity_id');
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
 
     return res.status(200).json({ company_leads, my_leads });
   } catch (error) {
@@ -116,18 +124,20 @@ export const viewRejectLead = asyncHandler(async (req, res) => {
     const company_leads = await Lead.find({sales_id: userId,
       type: 'company',
       status: 'reject', 
+      isDeleted: false,
     })
     .select('_id name phone address status created_at')
     .sort({ created_at: -1 })
-    .populate('source_id')
-    .populate('activity_id');
+    .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
     const my_leads = await Lead.find({sales_id: userId,
       type: 'sales',
       status: 'reject', 
+      isDeleted: false,
     })
     .select('_id name phone address status created_at')
     .sort({ created_at: -1 }) 
-    .populate('activity_id');
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } });
 
     return res.status(200).json({ company_leads, my_leads });
   } catch (error) {
@@ -138,7 +148,11 @@ export const viewRejectLead = asyncHandler(async (req, res) => {
 export const getLeadById = asyncHandler(async (req, res) => {
   try { 
     const id = req.params.id;
-    const lead = await Lead.findById(id);
+    const lead = await Lead.findOne({ _id: id, isDeleted: false })
+      .select('-isDeleted')
+      .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
+      .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
+      .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } });
 
     return res.status(200).json({ lead });
   } catch (error) {
@@ -212,20 +226,16 @@ export const deleteLead = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id; 
     const id = req.body.id; 
-    const lead = await Lead.findOneAndRemove({_id:id, sales_id: userId});
+    const lead = await Lead.findOne({_id:id, sales_id: userId});
   
     if (!lead) {
       throw new NotFound('Lead not found');
     }
 
-    lead.name = name || lead.name;
-    lead.phone = phone || lead.phone;
-    lead.address = address || lead.address;
-    lead.status = status || lead.status;
-    lead.activity_id = activity_id || lead.activity_id;
+    lead.isDeleted = true;
     await lead.save();
 
-    return res.status(200).json({ 'success': 'You update lead success' });
+    return res.status(200).json({ 'success': 'You delete lead success' });
   } catch (error) {
     return ErrorResponse(res, error.message, 400);
   }

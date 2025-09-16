@@ -33,14 +33,15 @@ export const createSales = asyncHandler(async (req, res) => {
 export const getAllSales = asyncHandler(async (req, res) => {
   const sales = await User.find({ role: 'Salesman', isDeleted: false })
     .select('-password -__v -isDeleted')
-    .populate('leader_id', 'name')
-    .populate('target_id', 'name point status')
+    .populate({ path: 'leader_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'target_id', select: 'name point status', match: { isDeleted: false } })
     .sort({ created_at: -1 })
 
 
    const activeLeaders = await User.find({ 
     role: 'Sales Leader', 
-    status: 'Active' 
+    status: 'Active',
+    isDeleted: false 
   })
   .select('_id name email')
   .sort({ name: 1 });
@@ -55,8 +56,8 @@ export const getSalesById = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const sales = await User.findOne({ _id: id, isDeleted: false })
   .select('-password -__v -leader_id -isDeleted')
-  .populate('leader_id', 'name')
-  .populate('target_id', 'name point status')
+  .populate({ path: 'leader_id', select: 'name', match: { isDeleted: false } })
+  .populate({ path: 'target_id', select: 'name point status', match: { isDeleted: false } })
 
   if (!sales) {
     throw new NotFound('Sales not found');

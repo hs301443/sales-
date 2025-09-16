@@ -41,14 +41,16 @@ export const getAllOffers = asyncHandler(async (req, res) => {
   const offers = await Offer.find({ isDeleted: false })
     .select('-isDeleted')
     .sort({ created_at: -1 })
-    .populate('product_id');
+    .populate({ path: 'product_id', select: 'name description start_date end_date discount_type discount_amount subscription_details setup_phase', match: { isDeleted: false } });
 
   return SuccessResponse(res, { message: 'Offers retrieved successfully', data: offers }, 200);
 });
 
 export const getOfferById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const offer = await Offer.findOne({ _id: id, isDeleted: false }).select('-isDeleted').populate('product_id');
+  const offer = await Offer.findOne({ _id: id, isDeleted: false })
+    .select('-isDeleted')
+    .populate({ path: 'product_id', select: 'name description start_date end_date discount_type discount_amount subscription_details setup_phase', match: { isDeleted: false } });
 
   if (!offer) {
     throw new NotFound('Offer not found');

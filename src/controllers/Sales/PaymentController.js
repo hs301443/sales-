@@ -19,34 +19,37 @@ export const viewPayment = asyncHandler(async (req, res) => {
       payment_methods
     ] = await Promise.all([
       Sales.find({
-        sales_id: sales_id 
+        sales_id: sales_id,
+        isDeleted: false,
       })  
       .sort({sale_date: -1})
       .populate({
         path: 'offer_id',
-        populate: 'product_id'
+        match: { isDeleted: false },
+        populate: { path: 'product_id', match: { isDeleted: false } }
       })
-      .populate('lead_id')
-      .populate('product_id')
+      .populate({ path: 'lead_id', select: 'name phone', match: { isDeleted: false } })
+      .populate({ path: 'product_id', select: 'name', match: { isDeleted: false } })
       .populate({
         path: 'payment_id',
-        populate: 'payment_method_id'
+        match: { isDeleted: false },
+        populate: { path: 'payment_method_id', select: 'name', match: { isDeleted: false } }
       })
       .lean(), 
       
-      Product.find({status: true})
+      Product.find({status: true, isDeleted: false})
       .select('_id name')
       .lean(),
       
-      Offer.find({status: true})
+      Offer.find({status: true, isDeleted: false})
       .select('_id name')
       .lean(),
       
-      Lead.find({status: {$in: ['intersted', 'negotiation', 'demo_request', 'demo_done']}})
+      Lead.find({status: {$in: ['intersted', 'negotiation', 'demo_request', 'demo_done']}, isDeleted: false})
       .select('_id name phone')
       .lean(),
       
-      PaymentMethod.find()
+      PaymentMethod.find({ isDeleted: false })
       .select('_id name')
       .lean()
     ]);

@@ -38,7 +38,7 @@ export const createLeader = asyncHandler(async (req, res) => {
 export const getAllLeaders = asyncHandler(async (req, res) => {
   const leaders = await User.find({ role: 'Sales Leader', isDeleted: false })
     .select('-password -__v -leader_id -isDeleted')
-    .populate('target_id', 'name point status')
+    .populate({ path: 'target_id', select: 'name point status', match: { isDeleted: false } })
     .sort({ created_at: -1 });
 
   return SuccessResponse(res, { message: 'Leaders retrieved successfully', data: leaders }, 200);
@@ -48,7 +48,7 @@ export const getLeaderById = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const leader = await User.findOne({ _id: id, isDeleted: false })
     .select('-password -__v -leader_id -isDeleted')
-    .populate('target_id', 'name point status');
+    .populate({ path: 'target_id', select: 'name point status', match: { isDeleted: false } });
 
   if (!leader) {
     throw new NotFound('Leader not found');

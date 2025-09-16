@@ -8,6 +8,7 @@ export const viewLead = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id;
     const leads = await Lead.aggregate([
+    { $match: { isDeleted: false } },
     {
       $lookup: {
         from: "users",
@@ -28,7 +29,9 @@ export const viewLead = asyncHandler(async (req, res) => {
     { $unwind: "$leader" },
     {
       $match: {
-        "leader._id": new mongoose.Types.ObjectId(userId)
+        "leader._id": new mongoose.Types.ObjectId(userId),
+        "sales.isDeleted": false,
+        "leader.isDeleted": false
       }
     }
   ]);
@@ -84,10 +87,11 @@ export const viewCompanyLead = asyncHandler(async (req, res) => {
     const leads = await Lead.find({
       type: 'company',
       sales_id: { $exists: false },
+      isDeleted: false,
     })
     .select('_id name phone address created_at')
-    .populate('activity_id')
-    .populate('source_id')
+    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
+    .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
 
     return res.status(200).json({ leads });
   } catch (error) {

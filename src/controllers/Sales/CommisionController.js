@@ -11,13 +11,14 @@ export const viewHome = asyncHandler(async (req, res) => {
         
         // Await the SalesPoint query
         const my_points = await SalesPoint.findOne({
-            month, year, sales_id
+            month, year, sales_id,
+            isDeleted: false,
         });
 
-        let commissions = await Commission.find();
+        let commissions = await Commission.find({ isDeleted: false }).select('-isDeleted');
         
         // Calculate total points from my_points (assuming my_points has a points field)
-        const totalPoints = my_points ? my_points.points || 0 : 0;
+        const totalPoints = my_points ? my_points.points || my_points.point || 0 : 0;
         
         commissions = commissions.map(item => {
             return {

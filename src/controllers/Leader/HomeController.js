@@ -10,7 +10,7 @@ export const viewHome = asyncHandler(async (req, res) => {
    
     const { month, year } = req.query;
     const target = await User.aggregate([
-      { $match: { leader_id: new mongoose.Types.ObjectId(userId) } },
+      { $match: { leader_id: new mongoose.Types.ObjectId(userId), isDeleted: false } },
       {
         $lookup: {
           from: "targets",
@@ -20,6 +20,7 @@ export const viewHome = asyncHandler(async (req, res) => {
         }
       },
       { $unwind: "$target" },
+      { $match: { "target.isDeleted": false } },
       {
         $group: {
           _id: null,
@@ -33,7 +34,8 @@ export const viewHome = asyncHandler(async (req, res) => {
       { 
         $match: { 
           month: parseInt(month),
-          year: parseInt(year)
+          year: parseInt(year),
+          isDeleted: false,
         } 
       },
       {
@@ -45,7 +47,7 @@ export const viewHome = asyncHandler(async (req, res) => {
         }
       },
       { $unwind: "$sales_user" },
-      { $match: { "sales_user.leader_id": new mongoose.Types.ObjectId(userId) } },
+      { $match: { "sales_user.leader_id": new mongoose.Types.ObjectId(userId), "sales_user.isDeleted": false } },
       {
         $group: {
           _id: null,
@@ -58,7 +60,7 @@ export const viewHome = asyncHandler(async (req, res) => {
 
     
     const sales = await User.aggregate([
-      { $match: { leader_id: new mongoose.Types.ObjectId(userId) } },
+      { $match: { leader_id: new mongoose.Types.ObjectId(userId), isDeleted: false } },
 
       // populate target_id
       {
@@ -70,6 +72,7 @@ export const viewHome = asyncHandler(async (req, res) => {
         }
       },
       { $unwind: { path: "$target", preserveNullAndEmptyArrays: true } },
+      { $match: { $or: [ { "target": { $eq: null } }, { "target.isDeleted": false } ] } },
 
       // populate sales points
       {

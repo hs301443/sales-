@@ -4,7 +4,7 @@ import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
 export const viewProduct = asyncHandler(async (req, res) => {
   try {
-    const products = await Product.find({status: true})
+    const products = await Product.find({status: true, isDeleted: false})
     .select('name description price_month price_quarter price_year setup_fees')
 
     return res.status(200).json({ products });

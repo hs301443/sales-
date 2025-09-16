@@ -7,9 +7,10 @@ export const viewOffer = asyncHandler(async (req, res) => {
     const now = new Date();
     let offers = await Offer.find({
       start_date: { $lte: now },
-      end_date: { $gte: now }
+      end_date: { $gte: now },
+      isDeleted: false,
     })
-    .populate('product_id');
+    .populate({ path: 'product_id', select: 'name', match: { isDeleted: false } });
     offers = offers.map((item) => {
       return {
         name: item.name,

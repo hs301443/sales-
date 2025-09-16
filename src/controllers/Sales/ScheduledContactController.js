@@ -9,13 +9,13 @@ export const createScheduledContact = asyncHandler(async (req, res) => {
   const { lead_id, sales_id, contact_date, notes } = req.body;
 
   // Check if lead exists
-  const lead = await Lead.findById(lead_id);
+  const lead = await Lead.findOne({ _id: lead_id, isDeleted: false });
   if (!lead) {
     return ErrorResponse(res, 400, { message: 'Invalid lead_id' });
   }
 
   // Check if salesman exists and has correct role
-  const salesman = await User.findById(sales_id);
+  const salesman = await User.findOne({ _id: sales_id, isDeleted: false });
   if (!salesman || salesman.role !== 'Salesman') {
     return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
   }
@@ -30,8 +30,8 @@ export const createScheduledContact = asyncHandler(async (req, res) => {
   });
 
   const populatedContact = await ScheduledContacts.findById(scheduledContact._id)
-    .populate('lead_id', 'name phone')
-    .populate('sales_id', 'name');
+    .populate({ path: 'lead_id', select: 'name phone', match: { isDeleted: false } })
+    .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } });
 
   return SuccessResponse(res, { 
     message: 'Scheduled contact created successfully', 
@@ -51,7 +51,7 @@ export const getMyScheduledContacts = asyncHandler(async (req, res) => {
 
  
   const scheduledContacts = await ScheduledContacts.find({ sales_id })
-    .populate('lead_id', 'name phone address')
+    .populate({ path: 'lead_id', select: 'name phone address', match: { isDeleted: false } })
     .sort({ contact_date: 1 }); 
 
   return SuccessResponse(res, { 

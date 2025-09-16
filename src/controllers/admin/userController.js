@@ -42,8 +42,8 @@ export const createUser = asyncHandler(async (req, res) => {
 export const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find({ isDeleted: false })
     .select('-password -__v -isDeleted')
-    .populate('target_id', 'name point status')
-    .populate('leader_id', 'name') 
+    .populate({ path: 'target_id', select: 'name point status', match: { isDeleted: false } })
+    .populate({ path: 'leader_id', select: 'name', match: { isDeleted: false } }) 
     .sort({ created_at: -1 });
 
   return SuccessResponse(res, { message: 'Users retrieved successfully', data: users }, 200);
@@ -53,9 +53,9 @@ export const getUserById = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const user = await User.findOne({ _id: id, isDeleted: false })
     .select('-password -__v -isDeleted')
-    .populate('target_id', 'name point status')
-    .populate('leader_id', 'name') 
-    .populate('target_id', 'name point status');
+    .populate({ path: 'target_id', select: 'name point status', match: { isDeleted: false } })
+    .populate({ path: 'leader_id', select: 'name', match: { isDeleted: false } }) 
+    .populate({ path: 'target_id', select: 'name point status', match: { isDeleted: false } });
 
   if (!user) {
     throw new NotFound('User not found');

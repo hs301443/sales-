@@ -63,11 +63,11 @@ export const createPayment = asyncHandler(async (req, res) => {
 export const getAllPayments = asyncHandler(async (req, res) => {
   const payments = await Payment.find({ isDeleted: false })
     .select('-isDeleted')
-    .populate('lead_id', 'name')
-    .populate('sales_id', 'name')
-    .populate('product_id', 'name')
-    .populate('offer_id', 'name')
-    .populate('payment_method_id', 'name')
+    .populate({ path: 'lead_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'product_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'offer_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'payment_method_id', select: 'name', match: { isDeleted: false } })
     .sort({ payment_date: -1 });
 
   return SuccessResponse(res, { message: 'Payments retrieved successfully', data: payments }, 200);
@@ -77,11 +77,11 @@ export const getPaymentById = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const payment = await Payment.findOne({ _id: id, isDeleted: false })
     .select('-isDeleted')
-    .populate('lead_id', 'name')
-    .populate('sales_id', 'name')
-    .populate('product_id', 'name')
-    .populate('offer_id', 'name')
-    .populate('payment_method_id', 'name');
+    .populate({ path: 'lead_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'product_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'offer_id', select: 'name', match: { isDeleted: false } })
+    .populate({ path: 'payment_method_id', select: 'name', match: { isDeleted: false } });
 
   if (!payment) {
     throw new NotFound('Payment not found');
