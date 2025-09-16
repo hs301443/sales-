@@ -38,7 +38,8 @@ export const createOffer = asyncHandler(async (req, res) => {
 });
 
 export const getAllOffers = asyncHandler(async (req, res) => {
-  const offers = await Offer.find()
+  const offers = await Offer.find({ isDeleted: false })
+    .select('-isDeleted')
     .sort({ created_at: -1 })
     .populate('product_id');
 
@@ -47,7 +48,7 @@ export const getAllOffers = asyncHandler(async (req, res) => {
 
 export const getOfferById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const offer = await Offer.findById(id).populate('product_id');
+  const offer = await Offer.findOne({ _id: id, isDeleted: false }).select('-isDeleted').populate('product_id');
 
   if (!offer) {
     throw new NotFound('Offer not found');
@@ -93,11 +94,14 @@ export const updateOffer = asyncHandler(async (req, res) => {
 
 export const deleteOffer = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const offer = await Offer.findByIdAndDelete(id);
+  const offer = await Offer.findById(id);
 
-  if (!offer) {
+  if (!offer || offer.isDeleted) {
     throw new NotFound('Offer not found');
   }
+
+  offer.isDeleted = true;
+  await offer.save();
 
   return SuccessResponse(res, { message: 'Offer deleted successfully' }, 200);
 });

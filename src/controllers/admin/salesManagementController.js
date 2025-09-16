@@ -61,7 +61,8 @@ export const createSale = asyncHandler(async (req, res) => {
 });
 
 export const getAllSales = asyncHandler(async (req, res) => {
-  const sales = await Sales.find()
+  const sales = await Sales.find({ isDeleted: false })
+    .select('-isDeleted')
     .populate('lead_id', 'name')
     .populate('sales_id', 'name')
     .populate('product_id', 'name')
@@ -74,7 +75,8 @@ export const getAllSales = asyncHandler(async (req, res) => {
 
 export const getSaleById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const sale = await Sales.findById(id)
+  const sale = await Sales.findOne({ _id: id, isDeleted: false })
+    .select('-isDeleted')
     .populate('lead_id', 'name email phone')
     .populate('sales_id', 'name email')
     .populate('product_id', 'name price description')
@@ -159,11 +161,14 @@ export const updateSale = asyncHandler(async (req, res) => {
 
 export const deleteSale = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const sale = await Sales.findByIdAndDelete(id);
+  const sale = await Sales.findById(id);
 
-  if (!sale) {
+  if (!sale || sale.isDeleted) {
     throw new NotFound('Sale not found');
   }
+
+  sale.isDeleted = true;
+  await sale.save();
 
   return SuccessResponse(res, { message: 'Sale deleted successfully' }, 200);
 });
@@ -175,7 +180,8 @@ export const getSalesByStatus = asyncHandler(async (req, res) => {
     return ErrorResponse(res, 400, { message: 'Invalid status' });
   }
 
-  const sales = await Sales.find({ status })
+  const sales = await Sales.find({ status, isDeleted: false })
+    .select('-isDeleted')
     .populate('lead_id', 'name')
     .populate('sales_id', 'name')
     .populate('product_id', 'name')
@@ -197,7 +203,8 @@ export const getSalesBySalesman = asyncHandler(async (req, res) => {
     return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
   }
 
-  const sales = await Sales.find({ sales_id })
+  const sales = await Sales.find({ sales_id, isDeleted: false })
+    .select('-isDeleted')
     .populate('lead_id', 'name email')
     .populate('product_id', 'name price')
     .populate('offer_id', 'name price')

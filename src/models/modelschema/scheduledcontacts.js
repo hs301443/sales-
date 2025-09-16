@@ -20,6 +20,10 @@ const ScheduledContactsSchema = new mongoose.Schema({
     status: {
         type: Boolean,
         default: false,
+    }, 
+    isDeleted: {
+        type: Boolean,
+        default: false,
     },
 });
 

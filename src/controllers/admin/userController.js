@@ -40,8 +40,8 @@ export const createUser = asyncHandler(async (req, res) => {
 });
 
 export const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find()
-    .select('-password -__v')
+  const users = await User.find({ isDeleted: false })
+    .select('-password -__v -isDeleted')
     .populate('target_id', 'name point status')
     .populate('leader_id', 'name') 
     .sort({ created_at: -1 });
@@ -51,8 +51,8 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 
 export const getUserById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const user = await User.findById(id)
-    .select('-password -__v')
+  const user = await User.findOne({ _id: id, isDeleted: false })
+    .select('-password -__v -isDeleted')
     .populate('target_id', 'name point status')
     .populate('leader_id', 'name') 
     .populate('target_id', 'name point status');
@@ -106,11 +106,14 @@ export const updateUser = asyncHandler(async (req, res) => {
 
 export const deleteUser = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const user = await User.findByIdAndDelete(id);
+  const user = await User.findById(id);
 
-  if (!user) {
+  if (!user || user.isDeleted) {
     throw new NotFound('User not found');
   }
+
+  user.isDeleted = true;
+  await user.save();
 
   return SuccessResponse(res, { message: 'User deleted successfully' }, 200);
 });

@@ -15,7 +15,8 @@ export const createTarget = asyncHandler(async (req, res) => {
 });
 
 export const getAllTargets = asyncHandler(async (req, res) => {
-  const targets = await Target.find()
+  const targets = await Target.find({ isDeleted: false })
+    .select('-isDeleted')
     //.populate('user_id', 'name email role')
     .sort({ created_at: -1 });
 
@@ -24,7 +25,7 @@ export const getAllTargets = asyncHandler(async (req, res) => {
 
 export const getTargetById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const target = await Target.findById(id);
+  const target = await Target.findOne({ _id: id, isDeleted: false }).select('-isDeleted');
 
   if (!target) {
     throw new ErrorResponse('Target not found', 404);
@@ -55,11 +56,14 @@ export const updateTarget = asyncHandler(async (req, res) => {
 
 export const deleteTarget = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const target = await Target.findByIdAndDelete(id);
+  const target = await Target.findById(id);
 
-  if (!target) {
+  if (!target || target.isDeleted) {
     throw new ErrorResponse('Target not found', 404);
   }
+
+  target.isDeleted = true;
+  await target.save();
 
   return SuccessResponse(res, { message: 'Target deleted successfully'}, 200);
 });

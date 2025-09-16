@@ -23,7 +23,8 @@ export const createPaymentMethod = asyncHandler(async (req, res) => {
 
 export const getAllPaymentMethods = asyncHandler(async (req, res) => {
   
-    const paymentMethods = await PaymentMethod.find()
+    const paymentMethods = await PaymentMethod.find({ isDeleted: false })
+      .select('-isDeleted')
       .sort({ createdAt: -1 });
     return SuccessResponse(res, { message: 'Payment methods retrieved successfully', data: paymentMethods }, 200);
  
@@ -32,7 +33,7 @@ export const getAllPaymentMethods = asyncHandler(async (req, res) => {
 export const getPaymentMethodById = asyncHandler(async (req, res) => {
   
     const id = req.params.id;
-    const paymentMethod = await PaymentMethod.findById(id);
+    const paymentMethod = await PaymentMethod.findOne({ _id: id, isDeleted: false }).select('-isDeleted');
     if (!paymentMethod) {
       throw new NotFound('Payment method not found');
     }
@@ -65,10 +66,12 @@ export const updatePaymentMethod = asyncHandler(async (req, res) => {
 export const deletePaymentMethod = asyncHandler(async (req, res) => {
  
     const id = req.params.id;
-    const paymentMethod = await PaymentMethod.findByIdAndDelete(id);
-    if (!paymentMethod) {
+    const paymentMethod = await PaymentMethod.findById(id);
+    if (!paymentMethod || paymentMethod.isDeleted) {
       throw new NotFound('Payment method not found');
     }
+    paymentMethod.isDeleted = true;
+    await paymentMethod.save();
     return SuccessResponse(res, { message: 'Payment method deleted successfully' }, 200);
 
 });

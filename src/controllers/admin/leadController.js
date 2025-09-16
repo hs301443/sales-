@@ -62,18 +62,35 @@ export const createLead = asyncHandler(async (req, res) => {
 });
 
 export const getAllLeads = asyncHandler(async (req, res) => {
-  const leads = await Lead.find()
+  const leads = await Lead.find({ isDeleted: false })
+    .select('-isDeleted')
     .populate('activity_id', 'name status')
     .populate('source_id', 'name status')
     .populate('sales_id', 'name')
     .sort({ created_at: -1 });
 
-  return SuccessResponse(res, { message: 'Leads retrieved successfully', data: leads }, 200);
+    const activeSales = await User.find({
+    role: 'Salesman',
+    status: 'Active'
+  })
+  .select('_id name email')
+  .sort({ name: 1 });
+
+  const activityOptions = await Activity.find({ status: 'true' })
+    .select('_id name status')
+    .sort({ name: 1 });
+
+  return SuccessResponse(res, { message: 'Leads retrieved successfully', data: {
+    leads,
+    SalesOptions: activeSales,
+    ActivityOptions: activityOptions
+  } }, 200);
 });
 
 export const getLeadById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const lead = await Lead.findById(id)
+  const lead = await Lead.findOne({ _id: id, isDeleted: false })
+    .select('-isDeleted')
     .populate('activity_id', 'name status')
     .populate('source_id', 'name status')
     .populate('sales_id', 'name');
@@ -143,11 +160,14 @@ export const updateLead = asyncHandler(async (req, res) => {
 
 export const deleteLead = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const lead = await Lead.findByIdAndDelete(id);
+  const lead = await Lead.findById(id);
 
-  if (!lead) {
+  if (!lead || lead.isDeleted) {
     throw new NotFound('Lead not found');
   }
+
+  lead.isDeleted = true;
+  await lead.save();
 
   return SuccessResponse(res, { message: 'Lead deleted successfully' }, 200);
 });

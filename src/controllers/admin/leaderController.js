@@ -36,8 +36,8 @@ export const createLeader = asyncHandler(async (req, res) => {
 });
 
 export const getAllLeaders = asyncHandler(async (req, res) => {
-  const leaders = await User.find({ role: 'Sales Leader' })
-    .select('-password -__v -leader_id')
+  const leaders = await User.find({ role: 'Sales Leader', isDeleted: false })
+    .select('-password -__v -leader_id -isDeleted')
     .populate('target_id', 'name point status')
     .sort({ created_at: -1 });
 
@@ -46,8 +46,8 @@ export const getAllLeaders = asyncHandler(async (req, res) => {
 
 export const getLeaderById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const leader = await User.findById(id)
-    .select('-password -__v -leader_id')
+  const leader = await User.findOne({ _id: id, isDeleted: false })
+    .select('-password -__v -leader_id -isDeleted')
     .populate('target_id', 'name point status');
 
   if (!leader) {
@@ -87,11 +87,14 @@ export const updateLeader = asyncHandler(async (req, res) => {
 
 export const deleteLeader = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const leader = await User.findByIdAndDelete(id);
+  const leader = await User.findById(id);
 
-  if (!leader) {
+  if (!leader || leader.isDeleted) {
     throw new NotFound('Leader not found');
   }
+
+  leader.isDeleted = true;
+  await leader.save();
 
   return SuccessResponse(res, { message: 'Leader deleted successfully' }, 200);
 });

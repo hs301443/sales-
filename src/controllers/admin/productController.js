@@ -29,7 +29,8 @@ export const createProduct = asyncHandler(async (req, res) => {
 });
 
 export const getAllProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find()
+  const products = await Product.find({ isDeleted: false })
+    .select('-isDeleted')
     .sort({ created_at: -1 });
 
   return SuccessResponse(res, { message: 'Products retrieved successfully', data: products }, 200);
@@ -37,7 +38,7 @@ export const getAllProducts = asyncHandler(async (req, res) => {
 
 export const getProductById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const product = await Product.findById(id);
+  const product = await Product.findOne({ _id: id, isDeleted: false }).select('-isDeleted');
 
   if (!product) {
     throw new NotFound('Product not found');
@@ -83,14 +84,14 @@ export const deleteProduct = asyncHandler(async (req, res) => {
   // First find the product to ensure it exists
   const product = await Product.findById(id);
   
-  if (!product) {
+  if (!product || product.isDeleted) {
     throw new NotFound('Product not found');
   }
 
-  // Delete all offers associated with this product
-  await Offer.deleteMany({ product_id: id });
-
-  await Product.findByIdAndDelete(id);
+  // Soft-delete product and its offers
+  product.isDeleted = true;
+  await product.save();
+  await Offer.updateMany({ product_id: id }, { $set: { isDeleted: true } });
 
   return SuccessResponse(res, { message: 'Product and its associated offers deleted successfully' }, 200);
 });

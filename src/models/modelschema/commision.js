@@ -22,6 +22,10 @@ const CommissionSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 export default mongoose.model('Commission', CommissionSchema);

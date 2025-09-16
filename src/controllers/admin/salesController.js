@@ -31,8 +31,8 @@ export const createSales = asyncHandler(async (req, res) => {
 });
 
 export const getAllSales = asyncHandler(async (req, res) => {
-  const sales = await User.find({ role: 'Salesman' })
-    .select('-password -__v')
+  const sales = await User.find({ role: 'Salesman', isDeleted: false })
+    .select('-password -__v -isDeleted')
     .populate('leader_id', 'name')
     .populate('target_id', 'name point status')
     .sort({ created_at: -1 })
@@ -53,8 +53,8 @@ export const getAllSales = asyncHandler(async (req, res) => {
 
 export const getSalesById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const sales = await User.findById(id)
-  .select('-password -__v -leader_id')
+  const sales = await User.findOne({ _id: id, isDeleted: false })
+  .select('-password -__v -leader_id -isDeleted')
   .populate('leader_id', 'name')
   .populate('target_id', 'name point status')
 
@@ -97,11 +97,14 @@ export const updateSales = asyncHandler(async (req, res) => {
 
 export const deleteSales = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const sales = await User.findByIdAndDelete(id);
+  const sales = await User.findById(id);
 
-  if (!sales) {
+  if (!sales || sales.isDeleted) {
     throw new NotFound('Sales not found');
   }
+
+  sales.isDeleted = true;
+  await sales.save();
 
   return SuccessResponse(res, { message: 'Sales deleted successfully' }, 200);
 });

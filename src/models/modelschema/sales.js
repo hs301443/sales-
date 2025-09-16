@@ -34,6 +34,10 @@ const SalesSchema = new mongoose.Schema({
         enum: ['Pending', 'Approve', 'Reject'],
         default: 'Pending'
     }, 
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 export default mongoose.model('Sales', SalesSchema);

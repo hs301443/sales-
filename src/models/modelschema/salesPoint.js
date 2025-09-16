@@ -22,6 +22,10 @@ const SalesPointSchema = new mongoose.Schema({
   created_at: {
     type: Date,
     default: Date.now
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
   }
 }); 
 

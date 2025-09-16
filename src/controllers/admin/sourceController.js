@@ -14,7 +14,8 @@ export const createSource = asyncHandler(async (req, res) => {
 });
 
 export const getAllSources = asyncHandler(async (req, res) => {
-  const sources = await Source.find()
+  const sources = await Source.find({ isDeleted: false })
+    .select('-isDeleted')
     .sort({ created_at: -1 });
 
   return SuccessResponse(res, { message: 'Sources retrieved successfully', data: sources }, 200);
@@ -22,7 +23,7 @@ export const getAllSources = asyncHandler(async (req, res) => {
 
 export const getSourceById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const source = await Source.findById(id);
+  const source = await Source.findOne({ _id: id, isDeleted: false }).select('-isDeleted');
 
   if (!source) {
     throw new ErrorResponse('Source not found', 404);
@@ -52,11 +53,14 @@ export const updateSource = asyncHandler(async (req, res) => {
 
 export const deleteSource = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const source = await Source.findByIdAndDelete(id);
+  const source = await Source.findById(id);
 
-  if (!source) {
+  if (!source || source.isDeleted) {
     throw new ErrorResponse('Source not found', 404);
   }
+
+  source.isDeleted = true;
+  await source.save();
 
   return SuccessResponse(res, { message: 'Source deleted successfully'}, 200);
 });

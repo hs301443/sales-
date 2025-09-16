@@ -28,14 +28,14 @@ export const createCommission = asyncHandler(async (req, res) => {
 });
 
 export const getAllCommissions = asyncHandler(async (req, res) => {
-  const commissions = await Commission.find().sort({ point_threshold: 1 });
+  const commissions = await Commission.find({ isDeleted: false }).select('-isDeleted').sort({ point_threshold: 1 });
 
   return SuccessResponse(res, { message: 'Commissions retrieved successfully', data: commissions }, 200);
 });
 
 export const getCommissionById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const commission = await Commission.findById(id);
+  const commission = await Commission.findOne({ _id: id, isDeleted: false }).select('-isDeleted');
 
   if (!commission) {
     throw new NotFound('Commission not found');
@@ -82,11 +82,14 @@ export const updateCommission = asyncHandler(async (req, res) => {
 
 export const deleteCommission = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const commission = await Commission.findByIdAndDelete(id);
+  const commission = await Commission.findById(id);
 
-  if (!commission) {
+  if (!commission || commission.isDeleted) {
     throw new NotFound('Commission not found');
   }
+
+  commission.isDeleted = true;
+  await commission.save();
 
   return SuccessResponse(res, { message: 'Commission deleted successfully' }, 200);
 });

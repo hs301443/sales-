@@ -61,7 +61,8 @@ export const createPayment = asyncHandler(async (req, res) => {
 });
 
 export const getAllPayments = asyncHandler(async (req, res) => {
-  const payments = await Payment.find()
+  const payments = await Payment.find({ isDeleted: false })
+    .select('-isDeleted')
     .populate('lead_id', 'name')
     .populate('sales_id', 'name')
     .populate('product_id', 'name')
@@ -74,7 +75,8 @@ export const getAllPayments = asyncHandler(async (req, res) => {
 
 export const getPaymentById = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const payment = await Payment.findById(id)
+  const payment = await Payment.findOne({ _id: id, isDeleted: false })
+    .select('-isDeleted')
     .populate('lead_id', 'name')
     .populate('sales_id', 'name')
     .populate('product_id', 'name')
@@ -119,11 +121,14 @@ export const updatePayment = asyncHandler(async (req, res) => {
 
 export const deletePayment = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const payment = await Payment.findByIdAndDelete(id);
+  const payment = await Payment.findById(id);
 
-  if (!payment) {
+  if (!payment || payment.isDeleted) {
     throw new NotFound('Payment not found');
   }
+
+  payment.isDeleted = true;
+  await payment.save();
 
   return SuccessResponse(res, { message: 'Payment deleted successfully' }, 200);
 });
