@@ -8,7 +8,7 @@ import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 export const createUser = asyncHandler(async (req, res) => {
   const { name, email, password, role, status, target_id } = req.body;
 
-  const existingUser = await User.findOne({ email });
+  const existingUser = await User.findOne({ email, isDeleted: false });
   if (existingUser) {
     throw new BadRequest('User with this email already exists');
   }

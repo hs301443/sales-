@@ -3,6 +3,7 @@ import Lead from '../../models/modelschema/lead.js';
 import User from '../../models/modelschema/User.js';
 import Product from '../../models/modelschema/Product.js';
 import Offer from '../../models/modelschema/Offer.js';
+import Payment from '../../models/modelschema/payment.js';
 import asyncHandler from 'express-async-handler';
 import { NotFound } from '../../Errors/NotFound.js';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
@@ -70,7 +71,22 @@ export const getAllSales = asyncHandler(async (req, res) => {
     .populate({ path: 'payment_id', select: 'amount payment_date', match: { isDeleted: false } })
     .sort({ sale_date: -1 });
 
-  return SuccessResponse(res, { message: 'Sales retrieved successfully', data: sales }, 200);
+    const leadOptions = await Lead.find({ isDeleted: false })
+    const salesOptions = await User.find({ role: 'Salesman', isDeleted: false })
+    const productOptions = await Product.find({ isDeleted: false })
+    const offerOptions = await Offer.find({ isDeleted: false })
+    const paymentOptions = await Payment.find({  isDeleted: false });
+
+  return SuccessResponse(res, { message: 'Sales retrieved successfully', 
+    
+    data: {
+    sales,
+    leadOptions,
+    salesOptions,
+    productOptions,
+    offerOptions,
+    paymentOptions
+    }, }, 200);
 });
 
 export const getSaleById = asyncHandler(async (req, res) => {

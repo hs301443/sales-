@@ -70,7 +70,20 @@ export const getAllPayments = asyncHandler(async (req, res) => {
     .populate({ path: 'payment_method_id', select: 'name', match: { isDeleted: false } })
     .sort({ payment_date: -1 });
 
-  return SuccessResponse(res, { message: 'Payments retrieved successfully', data: payments }, 200);
+    const leads = await Lead.find({ isDeleted: false }).select('_id name email')
+    const sales = await User.find({ isDeleted: false }).select('_id name email')
+    const products = await Product.find({ isDeleted: false }).select('-isDeleted')
+    const offers = await Offer.find({ isDeleted: false }).select('-isDeleted')
+    const paymentMethods = await PaymentMethod.find({ isDeleted: false }).select('-isDeleted')
+
+  return SuccessResponse(res, { message: 'Payments retrieved successfully', data: {
+    payments,
+   LeadOptions: leads,
+   SalesOptions: sales,
+   ProductOptions: products,
+   OfferOptions: offers,
+   PayementMethodOptions: paymentMethods 
+  } }, 200);
 });
 
 export const getPaymentById = asyncHandler(async (req, res) => {
