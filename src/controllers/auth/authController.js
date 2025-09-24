@@ -15,5 +15,5 @@ export const login = asyncHandler(async (req, res) => {
 
  const token = await generateJWT({id: user.id, role: user.role});
 
-  return SuccessResponse(res, { message: 'User logged in successfully', token}, 200);
+  return SuccessResponse(res, { message: 'User logged in successfully', token, role: user.role, name: user.name, email: user.email}, 200);
 });

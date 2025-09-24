@@ -41,7 +41,7 @@ export const viewPayment = asyncHandler(async (req, res) => {
       .select('_id name')
       .lean(),
       
-      Offer.find({status: true, isDeleted: false})
+      Offer.find({ isDeleted: false})
       .select('_id name')
       .lean(),
       
@@ -54,17 +54,49 @@ export const viewPayment = asyncHandler(async (req, res) => {
       .lean()
     ]);
 
-    const transformedSales = allSales.map((item) => {
+     const transformedSales = allSales.map((item) => {
+  return {
+    _id: item._id,
+    lead_name: item.lead_id?.name || 'N/A',
+    lead_phone: item.lead_id?.phone || 'N/A',
+    product: item.product_id?.name || item.offer_id?.product_id?.name || 'N/A',
+    offer: item.offer_id?.name || 'N/A',
+    payment_method: item.payment_id?.payment_method_id?.name || 'N/A',
+    amount: item.payment_id?.amount || 0,
+    status: item.status || 'Unknown',
+    sale_date: item.sale_date || 'N/A'
+  };
+});
+
+    //lead options
+    const leadOptions = leads.map((lead) => {
       return {
-        _id: item._id,
-        lead_name: item?.lead_id?.name || 'N/A',
-        lead_phone: item?.lead_id?.phone || 'N/A',
-        product: item?.product_id?.name || item?.offer_id?.product_id?.name || 'N/A',
-        offer: item?.offer_id?.name || 'N/A',
-        payment_method: item?.payment_id?.payment_method_id?.name || 'N/A',
-        amount: item?.payment_id?.amount || 0,
-        status: item.status || 'Unknown',
-        sale_date: item.sale_date || 'N/A'
+        value: lead._id,
+        label: lead.name
+      };
+    });
+
+    //product options
+    const productOptions = products.map((product) => {
+      return {
+        value: product._id,
+        label: product.name
+      };
+    });
+
+    //offer options
+    const offerOptions = offers.map((offer) => {
+      return {
+        value: offer._id,
+        label: offer.name
+      };
+    });
+
+    // payment method 
+    const paymentMethodOptions = payment_methods.map((paymentMethod) => {
+      return {
+        value: paymentMethod._id,
+        label: paymentMethod.name
       };
     });
 
@@ -76,7 +108,11 @@ export const viewPayment = asyncHandler(async (req, res) => {
     return res.status(200).json({ 
       pending, 
       approve,
-      reject
+      reject,
+      leadOptions,
+      productOptions,
+      offerOptions,
+      paymentMethodOptions
     });
 
   } catch (error) {
@@ -97,6 +133,28 @@ export const addPayment = asyncHandler(async (req, res) => {
       // sales_id
     const {lead_id, product_id, offer_id, payment_method_id, amount, item_type} = req.body;
     const userId = req.currentUser.id;
+    // check if lead exist 
+    const lead = await Lead.findById(lead_id);
+    if (!lead) {
+      return ErrorResponse(res, 400, { message: 'Invalid lead_id' });
+    }
+    // check product id 
+    const product = await Product.findById(product_id);
+    if (!product) {
+      return ErrorResponse(res, 400, { message: 'Invalid product_id' });
+    }
+    // check offer id 
+    const offer = await Offer.findById(offer_id);
+    if (!offer) {
+      return ErrorResponse(res, 400, { message: 'Invalid offer_id' });
+    }
+    // check payment method id
+    const paymentMethod = await PaymentMethod.findById(payment_method_id);
+    if (!paymentMethod) {
+      return ErrorResponse(res, 400, { message: 'Invalid payment_method_id' });
+    }
+
+    
     const payment = await Payment.create({
       lead_id,
       sales_id: userId,

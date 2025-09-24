@@ -7,110 +7,69 @@ import mongoose from 'mongoose';
 export const viewHome = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id;
-   
     const { month, year } = req.query;
-    const target = await User.aggregate([
-      { $match: { leader_id: new mongoose.Types.ObjectId(userId), isDeleted: false } },
-      {
-        $lookup: {
-          from: "targets",
-          localField: "target_id",
-          foreignField: "_id",
-          as: "target"
-        }
+
+    // Get all sales users under the leader
+    const salesUsers = await User.find({
+      leader_id: new mongoose.Types.ObjectId(userId),
+      isDeleted: false
+    })
+    .populate({
+      path: 'target_id',
+      match: { isDeleted: false },
+      select: 'point'
+    })
+    .select('name email phone target_id')
+    .lean();
+
+    // Calculate total target points using reduce
+    const total_target = salesUsers.reduce((sum, user) => {
+      return sum + (user.target_id?.point || 0);
+    }, 0);
+
+    // Get sales points for the specified month/year
+    const salesPoints = await SalesPoint.find({
+      month: parseInt(month),
+      year: parseInt(year),
+      isDeleted: false,
+      sales_id: { $in: salesUsers.map(user => user._id) }
+    })
+    .populate({
+      path: 'sales_id',
+      match: { 
+        leader_id: new mongoose.Types.ObjectId(userId),
+        isDeleted: false 
       },
-      { $unwind: "$target" },
-      { $match: { "target.isDeleted": false } },
-      {
-        $group: {
-          _id: null,
-          totalPoints: { $sum: "$target.point" }
-        }
-      }
-    ]);
+      select: 'name'
+    })
+    .select('point sales_id')
+    .lean();
 
-    const total_target = target.length > 0 ? target[0].totalPoints : 0;
-        const salesResult = await SalesPoint.aggregate([
-      { 
-        $match: { 
-          month: parseInt(month),
-          year: parseInt(year),
-          isDeleted: false,
-        } 
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "sales_id",
-          foreignField: "_id",
-          as: "sales_user"
-        }
-      },
-      { $unwind: "$sales_user" },
-      { $match: { "sales_user.leader_id": new mongoose.Types.ObjectId(userId), "sales_user.isDeleted": false } },
-      {
-        $group: {
-          _id: null,
-          totalSalesPoints: { $sum: "$point" }
-        }
-      }
-    ]);
+    // Filter out sales points where sales_id didn't populate (not under this leader)
+    const validSalesPoints = salesPoints.filter(sp => sp.sales_id);
 
-    const salesPoint = salesResult.length > 0 ? salesResult[0].totalSalesPoints : 0;
+    // Calculate total sales points using reduce
+    const salesPoint = validSalesPoints.reduce((sum, sp) => sum + (sp.point || 0), 0);
 
-    
-    const sales = await User.aggregate([
-      { $match: { leader_id: new mongoose.Types.ObjectId(userId), isDeleted: false } },
+    // Process sales data with reduce
+    const sales = salesUsers.reduce((acc, user) => {
+      const userSalesPoints = validSalesPoints.filter(sp => 
+        sp.sales_id._id.toString() === user._id.toString()
+      );
+      
+      const totalSalesPoints = userSalesPoints.reduce((sum, sp) => sum + (sp.point || 0), 0);
+      
+      acc.push({
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        totalTargetPoints: user.target_id?.point || 0,
+        totalSalesPoints: totalSalesPoints
+      });
+      
+      return acc;
+    }, []);
 
-      // populate target_id
-      {
-        $lookup: {
-          from: "targets",
-          localField: "target_id",
-          foreignField: "_id",
-          as: "target"
-        }
-      },
-      { $unwind: { path: "$target", preserveNullAndEmptyArrays: true } },
-      { $match: { $or: [ { "target": { $eq: null } }, { "target.isDeleted": false } ] } },
-
-      // populate sales points
-      {
-        $lookup: {
-          from: "salespoints",
-          let: { userId: "$_id" },
-          pipeline: [
-            { 
-              $match: { 
-                $expr: { $eq: ["$sales_id", "$$userId"] },
-                month: parseInt(month),
-                year: parseInt(year)
-              }
-            }
-          ],
-          as: "salesPoints"
-        }
-      },
-
-      // add computed fields
-      {
-        $addFields: {
-          totalTargetPoints: { $sum: ["$target.point", 0] },
-          totalSalesPoints: { $sum: "$salesPoints.point" }
-        }
-      },
-
-      // select fields
-      {
-        $project: {
-          name: 1,
-          email: 1,
-          phone: 1,
-          totalTargetPoints: 1,
-          totalSalesPoints: 1
-        }
-      }
-    ]);
     return res.status(200).json({ total_target, salesPoint, sales });
   } catch (error) {
     return ErrorResponse(res, 400, error.message);

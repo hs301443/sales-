@@ -317,7 +317,7 @@ export const getSalesTargetsCount = asyncHandler(async (req, res) => {
 
 
 export const getSalesTargetsDetails = asyncHandler(async (req, res) => {
-  const { sales_id } = req.params;
+  const  sales_id  = req.currentUser.id;
   
   // check sales_id is exist 
   const sales = await User.findById(sales_id);
@@ -333,5 +333,75 @@ export const getSalesTargetsDetails = asyncHandler(async (req, res) => {
   return SuccessResponse(res, { 
     message: 'Sales targets details retrieved successfully', 
     data: salesWithTargets
+  }, 200);
+});
+
+
+
+export const HomeSales = asyncHandler(async (req, res) => {
+  const  sales_id  = req.currentUser.id;
+  
+  // check sales_id is exist 
+  const sales = await User.findById(sales_id);
+  if (!sales || sales.role !== 'Salesman') {
+    return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
+  }
+
+  const totalLeadsCount = await Lead.countDocuments({ sales_id: sales_id });
+
+   const NoOfApprove_company_leads = await Lead.countDocuments({
+     sales_id: sales_id,
+      type: 'company',
+      status: 'approve', 
+      isDeleted: false,
+    })
+
+    const NoOfApprove_my_leads = await Lead.countDocuments({
+      sales_id: sales_id,
+      type: 'sales',
+      status: 'approve', 
+      isDeleted: false,
+    })
+
+  const NoOfReject_company_leads = await Lead.countDocuments({
+      sales_id: sales_id,
+      type: 'company',
+      status: 'reject', 
+      isDeleted: false,
+    })
+
+    const NoOfReject_my_leads = await Lead.countDocuments({
+      sales_id: sales_id,
+      type: 'sales',
+      status: 'reject', 
+      isDeleted: false,
+    })
+
+    const interestedCount = await Lead.countDocuments({ 
+    status: 'intersted', 
+    sales_id: sales_id
+  });
+  
+  const salesmenWithTargets = await User.find({
+    _id: sales_id, 
+    target_id: { $exists: true, $ne: null } 
+  }).populate('target_id');
+
+  const totalTarget = salesmenWithTargets.reduce((sum, salesman) => {
+    return sum + (salesman.target_id?.point || 0);
+  }, 0);
+  
+
+  return SuccessResponse(res, { 
+    message: 'Sales targets details retrieved successfully', 
+    data: {
+      total_leads: totalLeadsCount,
+      NoOfApprove_company_leads: NoOfApprove_company_leads,
+      NoOfApprove_my_leads: NoOfApprove_my_leads,
+      NoOfReject_company_leads: NoOfReject_company_leads,
+      NoOfReject_my_leads: NoOfReject_my_leads,
+      interestedCount: interestedCount,
+      total_target: totalTarget
+    }
   }, 200);
 });

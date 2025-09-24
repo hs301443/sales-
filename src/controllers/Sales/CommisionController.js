@@ -23,7 +23,8 @@ export const viewHome = asyncHandler(async (req, res) => {
         commissions = commissions.map(item => {
             return {
                 ...item.toObject(),
-                my_level: item.point_threshold <= totalPoints
+               // commission level name 
+              my_level: item.level_name
             };
         });
         

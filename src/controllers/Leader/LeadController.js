@@ -7,38 +7,35 @@ import mongoose from 'mongoose';
 export const viewLead = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id;
-    const leads = await Lead.aggregate([
-    { $match: { isDeleted: false } },
-    {
-      $lookup: {
-        from: "users",
-        localField: "sales_id",
-        foreignField: "_id",
-        as: "sales"
-      }
-    },
-    { $unwind: "$sales" },
-    {
-      $lookup: {
-        from: "users",
-        localField: "sales.leader_id",
-        foreignField: "_id",
-        as: "leader"
-      }
-    },
-    { $unwind: "$leader" },
-    {
-      $match: {
-        "leader._id": new mongoose.Types.ObjectId(userId),
-        "sales.isDeleted": false,
-        "leader.isDeleted": false
-      }
-    }
-  ]);
+    
+    const leads = await Lead.find({ isDeleted: false })
+      .populate({
+        path: 'sales_id',
+        select: 'name',
+        match: { isDeleted: false },
+        populate: {
+          path: 'leader_id',
+          select: 'name', 
+          match: { 
+            _id: new mongoose.Types.ObjectId(userId),
+            isDeleted: false 
+          }
+        }
+      })
+      .select('name') 
+      .exec();
 
-    return res.status(200).json({ leads });
+    // Filter leads where both sales_id and leader_id exist after population
+    const filteredLeads = leads.reduce((acc, lead) => {
+      if (lead.sales_id && lead.sales_id.leader_id) {
+        acc.push(lead);
+      }
+      return acc;
+    }, []);
+
+    return res.status(200).json({ leads: filteredLeads });
   } catch (error) {
-    return ErrorResponse(res, 400, error.message, );
+    return ErrorResponse(res, 400, error.message);
   }
 });
 
@@ -86,7 +83,6 @@ export const viewCompanyLead = asyncHandler(async (req, res) => {
     const userId = req.currentUser.id;
     const leads = await Lead.find({
       type: 'company',
-      sales_id: { $exists: false },
       isDeleted: false,
     })
     .select('_id name phone address created_at')
@@ -99,6 +95,7 @@ export const viewCompanyLead = asyncHandler(async (req, res) => {
   }
 });
 
+// leader have leades and determine sales for this leades
 export const determineSales = asyncHandler(async (req, res) => {
   try {
       const myId = req.currentUser.id;

@@ -12,6 +12,6 @@ router.use(verifyToken);
 router.use(verifyRole(Roles.SALESMAN));
 
 router.route('/schedule-contact').post((validate(createScheduledContactValidation)), createScheduledContact);
-router.route('/my-scheduled-contacts/:sales_id').get(getMyScheduledContacts);
+router.route('/my-scheduled-contacts').get(getMyScheduledContacts);
 
 export default router;

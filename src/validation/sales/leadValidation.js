@@ -4,7 +4,7 @@ export const createleadValidation = Joi.object({
   name: Joi.string().required().trim(),
   phone: Joi.string().required().trim(),
   address: Joi.string().optional().trim(),
-  sales_id: Joi.string().required().trim(),
+  //sales_id: Joi.string().required().trim(),
   activity_id: Joi.string().optional().trim(),
   source_id: Joi.string().optional().trim(),
 });

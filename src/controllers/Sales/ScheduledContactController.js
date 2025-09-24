@@ -41,7 +41,7 @@ export const createScheduledContact = asyncHandler(async (req, res) => {
 
 
 export const getMyScheduledContacts = asyncHandler(async (req, res) => {
-  const { sales_id } = req.params; 
+  const sales_id  = req.currentUser.id; 
   
   // Check if salesman exists
   const salesman = await User.findById(sales_id);
@@ -52,10 +52,21 @@ export const getMyScheduledContacts = asyncHandler(async (req, res) => {
  
   const scheduledContacts = await ScheduledContacts.find({ sales_id })
     .populate({ path: 'lead_id', select: 'name phone address', match: { isDeleted: false } })
+    .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } })
     .sort({ contact_date: 1 }); 
+
+    // lead Options
+    const leadOptions = await Lead.find({ sales_id, isDeleted: false })
+    .select('name phone address');
+
+    // sales options
+    const salesOptions = await User.find({ _id: sales_id, isDeleted: false })
+    .select('name');
 
   return SuccessResponse(res, { 
     message: 'Scheduled contacts retrieved successfully', 
-    data: scheduledContacts 
+    data: scheduledContacts,
+    leadOptions,
+    salesOptions 
   }, 200);
 });
