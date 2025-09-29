@@ -33,7 +33,16 @@ export const viewLead = asyncHandler(async (req, res) => {
       return acc;
     }, []);
 
-    return res.status(200).json({ leads: filteredLeads });
+    // sales options 
+    const salesOptions = await User.find({
+      leader_id: userId,
+      role: 'Salesman',
+      isDeleted: false
+    })
+    .select('_id name')
+    .lean();
+
+    return res.status(200).json({ leads: filteredLeads, salesOptions });
   } catch (error) {
     return ErrorResponse(res, 400, error.message);
   }
@@ -86,11 +95,12 @@ export const viewCompanyLead = asyncHandler(async (req, res) => {
       isDeleted: false,
     })
     .select('_id name phone address created_at')
+    .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } })
     .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
     .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
 
     return res.status(200).json({ leads });
-  } catch (error) {
+  } catch (error) {   
     return ErrorResponse(res, error.message, 400);
   }
 });

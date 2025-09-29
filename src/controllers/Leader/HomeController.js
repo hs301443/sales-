@@ -75,3 +75,19 @@ export const viewHome = asyncHandler(async (req, res) => {
     return ErrorResponse(res, 400, error.message);
   }
 });
+
+export const getAllMySales = asyncHandler(async (req, res) => {
+   
+   const userId = req.currentUser.id;
+
+   // sales options 
+    const salesOptions = await User.find({
+      leader_id: userId,
+      role: 'Salesman',
+      isDeleted: false
+    })
+    .select('_id name')
+    .lean();
+
+     return res.status(200).json({ salesOptions });
+})
