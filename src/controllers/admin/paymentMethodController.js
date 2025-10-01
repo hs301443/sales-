@@ -1,5 +1,5 @@
 import { saveBase64Image } from '../../utils/handleImages.js';
-import PaymentMethod from '../../models/modelschema/paymentMethod.js';
+import PaymentMethod from '../../models/modelschema/PaymentMethod.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 import { NotFound } from '../../Errors/NotFound.js';
