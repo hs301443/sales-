@@ -1,6 +1,6 @@
 import Payment from '../../models/modelschema/payment.js'; 
 import Sales from '../../models/modelschema/sales.js'; 
-import Product from '../../models/modelschema/Product.js'; 
+import Product from '../../models/modelschema/product.js'; 
 import Offer from '../../models/modelschema/Offer.js'; 
 import Lead from '../../models/modelschema/lead.js'; 
 import PaymentMethod from '../../models/modelschema/PaymentMethod.js';
