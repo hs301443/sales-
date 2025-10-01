@@ -3,7 +3,7 @@ import Lead from '../../models/modelschema/lead.js';
 import User from '../../models/modelschema/User.js';
 import Product from '../../models/modelschema/product.js';
 import Offer from '../../models/modelschema/Offer.js';
-import PaymentMethod from '../../models/modelschema/paymentmethod.js.';
+import PaymentMethod from '../../models/modelschema/paymentmethod.js';
 import asyncHandler from 'express-async-handler';
 import { NotFound } from '../../Errors/NotFound.js'
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
