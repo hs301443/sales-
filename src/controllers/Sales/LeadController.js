@@ -1,6 +1,6 @@
 import Lead from '../../models/modelschema/lead.js'; 
 import Activity from '../../models/modelschema/activity.js';
-import User from '../../models/modelschema/user.js';
+import User from '../../models/modelschema/User.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
