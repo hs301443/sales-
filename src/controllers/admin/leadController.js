@@ -1,6 +1,6 @@
 import Lead from '../../models/modelschema/lead.js';
 import User from '../../models/modelschema/User.js';
-import Activity from '../../models/modelschema/Activity.js';
+import Activity from '../../models/modelschema/activity.js';
 import Source from '../../models/modelschema/Source.js';
 import asyncHandler from 'express-async-handler';
 import { NotFound } from '../../Errors/NotFound.js'
