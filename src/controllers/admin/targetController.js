@@ -1,4 +1,4 @@
-import Target from '../../models/modelschema/Target.js';
+import Target from '../../models/modelschema/target.js';
 import asyncHandler from 'express-async-handler'
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
