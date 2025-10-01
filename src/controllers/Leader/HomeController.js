@@ -8,10 +8,12 @@ export const viewHome = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id;
     const { month, year } = req.query;
-
+    // check month and year if not has data 
+    
     // Get all sales users under the leader
     const salesUsers = await User.find({
       leader_id: new mongoose.Types.ObjectId(userId),
+      role: 'Salesman',
       isDeleted: false
     })
     .populate({

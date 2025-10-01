@@ -1,4 +1,4 @@
-import { NotFound } from "./notFound.js";
+import { NotFound } from "./NotFound.js";
 import { ValidationError } from "./validationError.js";
 import { ConflictError } from "./conflictError.js";
 import { ForbiddenError } from "./forbiddenError.js";
