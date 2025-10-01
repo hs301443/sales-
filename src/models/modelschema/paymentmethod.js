@@ -5,7 +5,7 @@ const PaymentMethodSchema = new mongoose.Schema({
       type: String,
       trim: true,
       required: [true, "Name is required"],
-    },
+    },  
   description: {
     type: String,
     required: [true, "Description is required"],
