@@ -1,4 +1,4 @@
-import Offer from '../../models/modelschema/offer.js'; 
+import Offer from '../../models/modelschema/Offer.js'; 
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
