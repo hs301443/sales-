@@ -1,4 +1,4 @@
-import Product from '../../models/modelschema/Product.js';
+import Product from '../../models/modelschema/product.js';
 import Offer from '../../models/modelschema/Offer.js';
 import asyncHandler from 'express-async-handler';
 import { NotFound } from '../../Errors/NotFound.js'
