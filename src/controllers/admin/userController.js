@@ -1,5 +1,5 @@
 import User from '../../models/modelschema/User.js'
-import Target from '../../models/modelschema/Target.js';
+import Target from '../../models/modelschema/target.js';
 import asyncHandler from 'express-async-handler'
 import { NotFound } from '../../Errors/NotFound.js';
 import { BadRequest } from '../../Errors/BadRequest.js';
