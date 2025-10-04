@@ -6,6 +6,7 @@ import Lead from '../../models/modelschema/lead.js';
 import PaymentMethod from '../../models/modelschema/paymentmethod.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
+import { saveBase64Image } from '../../utils/handleImages.js';
 
 export const viewPayment = asyncHandler(async (req, res) => {
   try {
@@ -63,6 +64,7 @@ export const viewPayment = asyncHandler(async (req, res) => {
     offer: item.offer_id?.name || 'N/A',
     payment_method: item.payment_id?.payment_method_id?.name || 'N/A',
     amount: item.payment_id?.amount || 0,
+    proof_image: item.payment_id?.proof_image || 'N/A',
     status: item.status || 'Unknown',
     sale_date: item.sale_date || 'N/A'
   };
@@ -131,8 +133,12 @@ export const viewPayment = asyncHandler(async (req, res) => {
 export const addPayment = asyncHandler(async (req, res) => {
   try { 
       // sales_id
-    const {lead_id, product_id, offer_id, payment_method_id, amount, item_type} = req.body;
+    const {lead_id, product_id, offer_id, payment_method_id, amount, proof_image, item_type} = req.body;
     const userId = req.currentUser.id;
+    const base64 = req.body.proof_image;
+    const folder = 'payments';
+    const imageUrl = await saveBase64Image(base64, userId, req, folder);
+
     // check if lead exist 
     const lead = await Lead.findById(lead_id);
     if (!lead) {
@@ -161,6 +167,7 @@ export const addPayment = asyncHandler(async (req, res) => {
       product_id,
       offer_id,
       payment_method_id,
+      proof_image: imageUrl,
       amount,
     });
     await Sales.create({

@@ -25,6 +25,10 @@ const PaymentSchema = new mongoose.Schema({
       type: Number,
       required: [true, "amount is required"],
     }, 
+    proof_image: {
+    type: String,
+    required: true,
+  },
   payment_date: {
     type: Date,
     default: Date.now
