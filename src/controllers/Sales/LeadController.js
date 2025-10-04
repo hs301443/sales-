@@ -26,13 +26,17 @@ export const viewAllLeads = asyncHandler(async (req, res) => {
           .select('_id name phone address status type created_at')
           .sort({ created_at: -1 })
           .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
-          .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } }),
+          .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
+          .populate({ path: 'country', select: 'name', match: { isDeleted: false } })
+          .populate({ path: 'city', select: 'name', match: { isDeleted: false } }),
         
         Lead.find({ ...filter, type: 'sales' })
           .select('_id name phone address status type created_at')
           .sort({ created_at: -1 })
           .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
           .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
+          .populate({ path: 'country', select: 'name', match: { isDeleted: false } })
+          .populate({ path: 'city', select: 'name', match: { isDeleted: false } }),
       ]);
 
       return { company_leads, my_leads };
