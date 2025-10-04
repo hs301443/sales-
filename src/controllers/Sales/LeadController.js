@@ -4,7 +4,74 @@ import User from '../../models/modelschema/User.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
-export const viewLead = asyncHandler(async (req, res) => {
+
+
+export const viewAllLeads = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.currentUser.id;
+    const baseFilter = {
+      sales_id: userId,
+      isDeleted: false,
+    };
+
+ 
+    const fetchLeads = async (additionalFilters) => {
+      const filter = { ...baseFilter, ...additionalFilters };
+      
+      const [company_leads, my_leads] = await Promise.all([
+        Lead.find({ ...filter, type: 'company' })
+          .select('_id name phone address status type created_at')
+          .sort({ created_at: -1 })
+          .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
+          .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } }),
+        
+        Lead.find({ ...filter, type: 'sales' })
+          .select('_id name phone address status type created_at')
+          .sort({ created_at: -1 })
+          .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
+      ]);
+
+      return { company_leads, my_leads };
+    };
+
+    const [defaultLeads, active, transfer, demo, approved, rejected] = await Promise.all([
+      fetchLeads({
+        status: 'default'
+      }),
+      fetchLeads({
+        status: { $in: ['intersted', 'negotiation'] },
+        transfer: false,
+      }),
+      fetchLeads({
+        status: { $in: ['intersted', 'negotiation'] },
+        transfer: true,
+      }),
+      fetchLeads({
+        status: { $in: ['demo_request', 'demo_done'] },
+      }),
+      fetchLeads({
+        status: 'approve',
+      }),
+      fetchLeads({
+        status: 'reject',
+      })
+    ]);
+
+    return res.status(200).json({
+      default: defaultLeads,
+      active,
+      transfer,
+      demo,
+      approved,
+      rejected
+    });
+  } catch (error) {
+    return ErrorResponse(res, error.message, 400);
+  }
+});
+
+
+/*export const viewLead = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id;
     const company_leads = await Lead.find({sales_id: userId,
@@ -143,7 +210,8 @@ export const viewRejectLead = asyncHandler(async (req, res) => {
   } catch (error) {
     return ErrorResponse(res, error.message, 400);
   }
-});
+});*/
+
 
 export const getLeadById = asyncHandler(async (req, res) => {
   try { 
@@ -174,7 +242,7 @@ export const createLead = asyncHandler(async (req, res) => {
       address,
       type: 'sales',
       sales_id: userId,
-      status: 'intersted',
+      status: 'default',
       activity_id, 
     });
 
@@ -339,7 +407,7 @@ export const getSalesTargetsDetails = asyncHandler(async (req, res) => {
 
 
 export const HomeSales = asyncHandler(async (req, res) => {
-  const  sales_id  = req.currentUser.id;
+  const sales_id = req.currentUser.id;
   
   // check sales_id is exist 
   const sales = await User.findById(sales_id);
@@ -349,35 +417,35 @@ export const HomeSales = asyncHandler(async (req, res) => {
 
   const totalLeadsCount = await Lead.countDocuments({ sales_id: sales_id });
 
-   const NoOfApprove_company_leads = await Lead.countDocuments({
-     sales_id: sales_id,
-      type: 'company',
-      status: 'approve', 
-      isDeleted: false,
-    })
+  const NoOfApprove_company_leads = await Lead.countDocuments({
+    sales_id: sales_id,
+    type: 'company',
+    status: 'approve', 
+    isDeleted: false,
+  });
 
-    const NoOfApprove_my_leads = await Lead.countDocuments({
-      sales_id: sales_id,
-      type: 'sales',
-      status: 'approve', 
-      isDeleted: false,
-    })
+  const NoOfApprove_my_leads = await Lead.countDocuments({
+    sales_id: sales_id,
+    type: 'sales',
+    status: 'approve', 
+    isDeleted: false,
+  });
 
   const NoOfReject_company_leads = await Lead.countDocuments({
-      sales_id: sales_id,
-      type: 'company',
-      status: 'reject', 
-      isDeleted: false,
-    })
+    sales_id: sales_id,
+    type: 'company',
+    status: 'reject', 
+    isDeleted: false,
+  });
 
-    const NoOfReject_my_leads = await Lead.countDocuments({
-      sales_id: sales_id,
-      type: 'sales',
-      status: 'reject', 
-      isDeleted: false,
-    })
+  const NoOfReject_my_leads = await Lead.countDocuments({
+    sales_id: sales_id,
+    type: 'sales',
+    status: 'reject', 
+    isDeleted: false,
+  });
 
-    const interestedCount = await Lead.countDocuments({ 
+  const interestedCount = await Lead.countDocuments({ 
     status: 'intersted', 
     sales_id: sales_id
   });
@@ -390,7 +458,9 @@ export const HomeSales = asyncHandler(async (req, res) => {
   const totalTarget = salesmenWithTargets.reduce((sum, salesman) => {
     return sum + (salesman.target_id?.point || 0);
   }, 0);
-  
+
+  // Get the current salesman's target point
+  const my_target = salesmenWithTargets.length > 0 ? salesmenWithTargets[0].target_id?.point || 0 : 0;
 
   return SuccessResponse(res, { 
     message: 'Sales targets details retrieved successfully', 
@@ -401,7 +471,8 @@ export const HomeSales = asyncHandler(async (req, res) => {
       NoOfReject_company_leads: NoOfReject_company_leads,
       NoOfReject_my_leads: NoOfReject_my_leads,
       interestedCount: interestedCount,
-      total_target: totalTarget
+      total_target: totalTarget,
+      my_target: my_target 
     }
   }, 200);
 });

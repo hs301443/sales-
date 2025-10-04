@@ -21,8 +21,8 @@ const LeadSchema = new mongoose.Schema({
     },
     status: {
         type: String, 
-        default: 'intersted',
-        enum: ['intersted', 'negotiation', 'demo_request', 'demo_done', 'reject', 'approve']
+        default: 'default',
+        enum: ['default','intersted', 'negotiation', 'demo_request', 'demo_done', 'reject', 'approve']
     },
     sales_id: {
         type: mongoose.Schema.Types.ObjectId,
