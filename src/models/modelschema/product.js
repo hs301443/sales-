@@ -2,24 +2,22 @@ import mongoose from 'mongoose';
 
 const productSchema = new mongoose.Schema({
   name: {
-        type: String,
-        trim: true,
-        required: [true, "Name is required"],
+    type: String,
+    trim: true,
+    required: [true, "Name is required"],
   },
   description: {
     type: String
   },
-  price_month: {
-    type: Number,
-    min: 0
+  subscription_type: {
+    type: String,
+    enum: ['Monthly', 'Quarterly', 'Half year', 'Yearly'],
+    required: [true, "Subscription type is required"]
   },
-  price_quarter: {
+  price: {
     type: Number,
-    min: 0
-  },
-  price_year: {
-    type: Number,
-    min: 0
+    min: 0,
+    required: [true, "Price is required"]
   },
   setup_fees: {
     type: Number,

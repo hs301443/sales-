@@ -1,5 +1,5 @@
 import express from 'express';
-import { createScheduledContact, getMyScheduledContacts } from '../../controllers/Sales/ScheduledContactController.js';
+import { createScheduledContact, getMyScheduledContacts, updateScheduledContact, getScheduledContactById } from '../../controllers/Sales/ScheduledContactController.js';
 import { createScheduledContactValidation, updateScheduledContactValidation } from '../../validation/sales/scheduledContactValidation.js';
 import { validate } from '../../middlewares/validation.js';
 import { verifyToken } from '../../middlewares/verifyToken.js';
@@ -13,5 +13,7 @@ router.use(verifyRole(Roles.SALESMAN));
 
 router.route('/schedule-contact').post((validate(createScheduledContactValidation)), createScheduledContact);
 router.route('/my-scheduled-contacts').get(getMyScheduledContacts);
+router.route('/schedule-contact/:id').put((validate(updateScheduledContactValidation)), updateScheduledContact);
+router.route('/schedule-contact/:id').get(getScheduledContactById);
 
 export default router;

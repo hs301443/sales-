@@ -2,6 +2,8 @@ import Lead from '../../models/modelschema/lead.js';
 import User from '../../models/modelschema/User.js';
 import Activity from '../../models/modelschema/activity.js';
 import Source from '../../models/modelschema/Source.js';
+import Country from '../../models/modelschema/country.js';
+import City from '../../models/modelschema/city.js';
 import asyncHandler from 'express-async-handler';
 import { NotFound } from '../../Errors/NotFound.js'
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
@@ -10,7 +12,8 @@ export const createLead = asyncHandler(async (req, res) => {
   const {
     name,
     phone,
-    address,
+    country,    
+    city,       
     type,
     status,
     sales_id,
@@ -18,47 +21,84 @@ export const createLead = asyncHandler(async (req, res) => {
     source_id,
   } = req.body;
 
-  // check sales_id is exist 
+  // Check if sales_id exists and is a Salesman
   const sales = await User.findById(sales_id);
   if (!sales || sales.role !== 'Salesman') {
     return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
   }
 
-  // check activity_id is exist
-    const activity = await Activity.findById(activity_id);
-    if (!activity) {
-        return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
-    }
+  // Check if activity_id exists
+  const activity = await Activity.findById(activity_id);
+  if (!activity) {
+    return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
+  }
 
-    if (type === 'company' && !source_id) {
+  // Check if country exists (now required)
+  const countryExists = await Country.findById(country);
+  if (!countryExists) {
+    return ErrorResponse(res, 400, { message: 'Invalid country' });
+  }
+
+  // Check if city exists and belongs to the country
+  if (city) {
+    const cityExists = await City.findOne({
+      _id: city,
+      country: country, 
+      isDeleted: false
+    });
+    if (!cityExists) {
+      return ErrorResponse(res, 400, { message: 'Invalid city or city does not belong to selected country' });
+    }
+  }
+
+  // Validate source_id based on type
+  if (type === 'company' && !source_id) {
     return ErrorResponse(res, 400, { message: 'Source ID is required for company type' });
   }
 
-  // If type is 'sales', source_id should not be provided
-  if (type === 'sales' && source_id) {
-    return ErrorResponse(res, 400, { message: 'Source ID should not be provided for sales type' });
-  }
-
-  // check source_id is exist
-  if(source_id){
+  // Check source_id exists if provided
+  if (source_id) {
     const source = await Source.findById(source_id);
     if (!source) {
-        return ErrorResponse(res, 400, { message: 'Invalid source_id' });
+      return ErrorResponse(res, 400, { message: 'Invalid source_id' });
     }
   }
 
+  // Check if phone already exists
+  const existingLead = await Lead.findOne({ 
+    phone, 
+    isDeleted: false 
+  });
+  
+  if (existingLead) {
+    return ErrorResponse(res, 400, { message: 'Lead with this phone number already exists' });
+  }
+
+  // Create the lead
   const lead = await Lead.create({
     name,
     phone,
-    address,
+    country,
+    city,
     type,
     status,
     sales_id,
     activity_id,
-    source_id: type === 'company' ? source_id : null,
+    source_id
   });
 
-  return SuccessResponse(res, { message: 'Lead created successfully' }, 201);
+  // Populate the lead with related data for response
+  const populatedLead = await Lead.findById(lead._id)
+    .populate('country', 'name')
+    .populate('city', 'name')
+    .populate('sales_id', 'name email')
+    .populate('activity_id', 'name')
+    .populate('source_id', 'name');
+
+  return SuccessResponse(res, { 
+    message: 'Lead created successfully',
+    data: populatedLead 
+  }, 201);
 });
 
 export const getAllLeads = asyncHandler(async (req, res) => {

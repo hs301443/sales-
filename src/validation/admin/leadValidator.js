@@ -3,7 +3,8 @@ import Joi from 'joi';
 export const createLeadSchema = Joi.object().keys({
   name: Joi.string().required().trim(),
   phone: Joi.string().required().trim(),
-  address: Joi.string().optional().trim(),
+  country: Joi.string().required().trim(),
+  city: Joi.string().optional().trim(),
   type: Joi.string().required().valid('sales', 'company').trim(),
   status: Joi.string().optional().valid('default','intersted', 'negotiation', 'demo_request', 'demo_done', 'reject', 'approve').trim(),
   sales_id: Joi.string().required().trim(),
