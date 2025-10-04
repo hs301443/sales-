@@ -22,7 +22,7 @@ export const viewLead = asyncHandler(async (req, res) => {
           }
         }
       })
-      .select('name') 
+      .select('name status') 
       .exec();
 
     // Filter leads where both sales_id and leader_id exist after population
@@ -94,10 +94,12 @@ export const viewCompanyLead = asyncHandler(async (req, res) => {
       type: 'company',
       isDeleted: false,
     })
-    .select('_id name phone address created_at')
+    .select('_id name phone status created_at')
+     .populate({ path: 'country', select: 'name', match: { isDeleted: false } })
+     .populate({ path: 'city', select: 'name', match: { isDeleted: false } })
     .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } })
-    .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
-    .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
+    .populate({ path: 'activity_id', select: 'name ', match: { isDeleted: false } })
+    .populate({ path: 'source_id', select: 'name ', match: { isDeleted: false } })
 
     return res.status(200).json({ leads });
   } catch (error) {   
