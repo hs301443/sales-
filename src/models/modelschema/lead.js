@@ -11,9 +11,15 @@ const LeadSchema = new mongoose.Schema({
         required: [true, "Phone is required"],
         unique: [true, "Phone is found"],
     },
-    address: {
-        type: String, 
-    },
+    country: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Country',
+        required: true
+      },
+    city: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'City'
+        },
     type: {
         type: String,
         enum: ['sales', 'company'],

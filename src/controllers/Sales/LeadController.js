@@ -1,6 +1,9 @@
 import Lead from '../../models/modelschema/lead.js'; 
 import Activity from '../../models/modelschema/activity.js';
 import User from '../../models/modelschema/User.js';
+import Source from '../../models/modelschema/Source.js';
+import Country from '../../models/modelschema/country.js';
+import City from '../../models/modelschema/city.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
@@ -28,6 +31,7 @@ export const viewAllLeads = asyncHandler(async (req, res) => {
         Lead.find({ ...filter, type: 'sales' })
           .select('_id name phone address status type created_at')
           .sort({ created_at: -1 })
+          .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
           .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
       ]);
 
@@ -231,64 +235,206 @@ export const getLeadById = asyncHandler(async (req, res) => {
 export const createLead = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id;
-    const {name, phone, address, activity_id} = req.body
+    const { name, phone, country, city, activity_id, source_name } = req.body; 
+
+    
+    if (!name || !phone || !country || !city || !activity_id) {
+      return ErrorResponse(res, 400, { message: 'All fields are required: name, phone, country, city, activity_id' });
+    }
+
+    
     const activity = await Activity.findById(activity_id);
     if (!activity) {
-        return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
+      return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
     }
-    const leadRequest = await Lead.create({
+
+
+    const countryExists = await Country.findById(country);
+    if (!countryExists) {
+      return ErrorResponse(res, 400, { message: 'Invalid country' });
+    }
+
+    
+    const cityExists = await City.findOne({
+      _id: city,
+      country: country,
+      isDeleted: false
+    });
+    if (!cityExists) {
+      return ErrorResponse(res, 400, { message: 'Invalid city or city does not belong to selected country' });
+    }
+
+    // Check if phone already exists
+    const existingLead = await Lead.findOne({ 
+      phone, 
+      isDeleted: false 
+    });
+    if (existingLead) {
+      return ErrorResponse(res, 400, { message: 'Lead with this phone number already exists' });
+    }
+
+    let sourceId = null;
+
+    if (source_name) {  
+      const existingSource = await Source.findOne({ 
+        name: source_name,
+        isDeleted: false 
+      });
+      
+      if (existingSource) {
+        sourceId = existingSource._id;
+      } else {
+        const source = await Source.create({
+          name: source_name,
+          status: 'Active',
+        });
+        sourceId = source._id;
+      }
+    }
+
+    
+    const lead = await Lead.create({
       name,
       phone,
-      address,
+      country,
+      city,
       type: 'sales',
       sales_id: userId,
       status: 'default',
-      activity_id, 
+      activity_id,
+      source_id: sourceId, //  be null if no source_name provided
     });
 
-    return res.status(200).json({ 'success': 'You add lead success' });
+    const populatedLead = await Lead.findById(lead._id)
+      .populate('country', 'name')
+      .populate('city', 'name')
+      .populate('activity_id', 'name')
+      .populate('source_id', 'name');
+
+    return res.status(201).json({ 
+      success: true,
+      message: 'Lead created successfully',
+      data: populatedLead
+    });
+
   } catch (error) {
     return ErrorResponse(res, error.message, 400);
   }
 });
 
 export const updateLead = asyncHandler(async (req, res) => {
-    const userId = req.currentUser.id;
-    const id = req.params.id;
-    
-    // Find the lead by ID
-    const lead = await Lead.findById(id);
-    
-    if (!lead) {
-        throw new NotFound('Lead not found');
-    }
-
-    // Check if the lead belongs to the current sales user
-    if (lead.sales_id.toString() !== userId) {
-        return ErrorResponse(res, 403, { message: 'You are not authorized to update this lead' });
-    }
-
-    const { name, phone, address, status, activity_id } = req.body;
-
-    // Validate activity_id if provided
-    if (activity_id) {
-        const activity = await Activity.findById(activity_id);
-        if (!activity) {
-            return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
+    try {
+        const userId = req.currentUser.id;
+        const id = req.params.id;
+        
+      
+        const lead = await Lead.findById(id);
+        
+        if (!lead) {
+            return ErrorResponse(res, 404, { message: 'Lead not found' });
         }
+
+        
+        if (lead.sales_id.toString() !== userId) {
+            return ErrorResponse(res, 403, { message: 'You are not authorized to update this lead' });
+        }
+
+        const { name, phone, country, city, status, activity_id, source_name } = req.body;
+
+        
+        if (activity_id) {
+            const activity = await Activity.findById(activity_id);
+            if (!activity) {
+                return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
+            }
+        }
+
+      
+        if (country) {
+            const countryExists = await Country.findById(country);
+            if (!countryExists) {
+                return ErrorResponse(res, 400, { message: 'Invalid country' });
+            }
+        }
+
+        
+        if (city) {
+            const selectedCountry = country || lead.country;
+            const cityExists = await City.findOne({
+                _id: city,
+                country: selectedCountry,
+                isDeleted: false
+            });
+            if (!cityExists) {
+                return ErrorResponse(res, 400, { message: 'Invalid city or city does not belong to selected country' });
+            }
+        }
+
+        
+        if (phone && phone !== lead.phone) {
+            const existingLead = await Lead.findOne({ 
+                phone, 
+                isDeleted: false,
+                _id: { $ne: id } 
+            });
+            if (existingLead) {
+                return ErrorResponse(res, 400, { message: 'Lead with this phone number already exists' });
+            }
+        }
+
+        let sourceId = lead.source_id;
+
+        
+        if (source_name !== undefined) {
+            if (source_name === "" || source_name === null) {
+                sourceId = null;
+            } else {
+                const existingSource = await Source.findOne({ 
+                    name: source_name,
+                    isDeleted: false 
+                });
+                
+                if (existingSource) {
+                    sourceId = existingSource._id;
+                } else {
+                    const source = await Source.create({
+                        name: source_name,
+                        status: 'Active',
+                    });
+                    sourceId = source._id;
+                }
+            }
+        }
+
+        
+        lead.name = name || lead.name;
+        lead.phone = phone || lead.phone;
+        lead.country = country || lead.country;
+        lead.city = city || lead.city;
+        lead.status = status || lead.status;
+        lead.activity_id = activity_id || lead.activity_id;
+        lead.source_id = sourceId;
+        
+        await lead.save();
+
+        
+        const populatedLead = await Lead.findById(lead._id)
+            .populate('country', 'name')
+            .populate('city', 'name')
+            .populate('activity_id', 'name')
+            .populate('source_id', 'name');
+
+        return res.status(200).json({ 
+            success: true,
+            message: 'Lead updated successfully',
+            data: populatedLead
+        });
+
+    } catch (error) {
+        return ErrorResponse(res, error.message, 400);
     }
-
-    // Update lead fields
-    lead.name = name || lead.name;
-    lead.phone = phone || lead.phone;
-    lead.address = address || lead.address;
-    lead.status = status || lead.status;
-    lead.activity_id = activity_id || lead.activity_id;
-    
-    await lead.save();
-
-    return res.status(200).json({ 'success': 'You updated lead successfully' });
 });
+
 
 export const deleteLead = asyncHandler(async (req, res) => {
   try {
@@ -476,3 +622,23 @@ export const HomeSales = asyncHandler(async (req, res) => {
     }
   }, 200);
 });
+
+
+export const getAllCountryAndCity = asyncHandler(async (req, res) => {
+  const countries = await Country.find({ isDeleted: false })
+    .select('_id name')
+    .sort({ name: 1 });
+  const cities = await City.find({ isDeleted: false })
+    .select('_id name')
+    .sort({ name: 1 })
+    .populate('country', 'name');
+
+  return SuccessResponse(res, { 
+    message: 'Country and City retrieved successfully', 
+    data: {
+      countries: countries,
+      cities: cities
+    }
+  }, 200);
+});
+
