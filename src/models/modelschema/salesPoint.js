@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const SalesPointSchema = new mongoose.Schema({
   point: {
       type: Number, 
+      min: [0, 'Balance must be a positive number'],
       required: [true, "Point is required"],
     },
    month: {
