@@ -99,7 +99,7 @@ export const editCity = asyncHandler(async (req, res) => {
     return SuccessResponse(res, { message: 'City updated successfully', data: city }, 200);
 });
 
-// delete country
+
 export const deleteCountry = asyncHandler(async (req, res) => {
     const { countryId } = req.params;
     const country = await Country.findOne({
@@ -110,6 +110,12 @@ export const deleteCountry = asyncHandler(async (req, res) => {
     if (!country) {
         throw new NotFound('Country not found');
     }
+
+    
+    await City.deleteMany({ 
+        country: countryId,
+        isDeleted: false 
+    });
 
     await country.deleteOne();
 
