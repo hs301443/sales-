@@ -111,7 +111,7 @@ export const deleteCountry = asyncHandler(async (req, res) => {
         throw new NotFound('Country not found');
     }
 
-    await country.remove();
+    await country.deleteOne();
 
     return SuccessResponse(res, { message: 'Country deleted successfully' }, 200);
 });
@@ -128,7 +128,7 @@ export const deleteCity = asyncHandler(async (req, res) => {
         throw new NotFound('City not found');
     }
 
-    await city.remove();
+    await city.deleteOne();
 
     return SuccessResponse(res, { message: 'City deleted successfully' }, 200);
 });
