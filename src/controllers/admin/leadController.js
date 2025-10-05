@@ -107,6 +107,8 @@ export const getAllLeads = asyncHandler(async (req, res) => {
     .populate({ path: 'activity_id', select: 'name status ', match: { isDeleted: false } })
     .populate({ path: 'source_id',   select: 'name status ', match: { isDeleted: false } })
     .populate({ path: 'sales_id',    select: 'name ',        match: { isDeleted: false } })
+    .populate({ path: 'country',     select: 'name',        match: { isDeleted: false } })
+    .populate({ path: 'city',        select: 'name',match: { isDeleted: false } })
     .sort({ created_at: -1 });
 
   const activeSales = await User.find({
