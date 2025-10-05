@@ -133,3 +133,32 @@ export const deleteCity = asyncHandler(async (req, res) => {
     return SuccessResponse(res, { message: 'City deleted successfully' }, 200);
 });
 
+// get country by ID
+export const getCountryById = asyncHandler(async (req, res) => {
+    const { countryId } = req.params;
+    const country = await Country.findById({
+        _id: countryId,
+        isDeleted: false,
+    });
+
+    if (!country) {
+        throw new NotFound('Country not found');
+    }
+
+    return SuccessResponse(res, { message: 'Country retrieved successfully', data: country }, 200);
+});
+
+// get city by ID
+export const getCityById = asyncHandler(async (req, res) => {
+    const { cityId } = req.params;
+    const city = await City.findById({
+        _id: cityId,
+        isDeleted: false,
+    }).populate('country', 'name');
+
+    if (!city) {
+        throw new NotFound('City not found');
+    }
+
+    return SuccessResponse(res, { message: 'City retrieved successfully', data: city }, 200);
+});
