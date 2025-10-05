@@ -108,21 +108,36 @@ export const viewCompanyLead = asyncHandler(async (req, res) => {
 });
 
 // leader have leades and determine sales for this leades
+
 export const determineSales = asyncHandler(async (req, res) => {
   try {
-      const myId = req.currentUser.id;
-      const { salesId } = req.body.salesId;  
-      const { id } = req.params.id;  
+    const myId = req.currentUser.id;
+    const { salesId } = req.body;
+    const { id } = req.params;
 
-      await Lead.updateMany(
-        { sales_id: { $exists: false },
-          '_id' : id },
-        { $set: { sales_id: salesId } }
-      );
+    const lead = await Lead.findById(id);
 
-      res.json({ message: "You determine sales successfully" });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Server error" });
+    if (!lead) {
+      return res.status(404).json({ error: "Lead not found" });
     }
+
+    if (lead.sales_id.toString() === myId) {
+      return res.status(400).json({ error: "You are already the sales person for this lead" });
+    }
+
+    const result = await Lead.findByIdAndUpdate(
+      id,
+      { sales_id: salesId },
+      { new: true }
+    );
+
+    if (!result) {
+      return res.status(400).json({ error: "Failed to determine sales" });
+    }
+
+    return res.json({ message: "Sales determined successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
+  }
 });
