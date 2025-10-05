@@ -15,7 +15,8 @@ export const createLeadSchema = Joi.object().keys({
 export const updateLeadSchema = Joi.object().keys({
   name: Joi.string().optional().trim(),
   phone: Joi.string().optional().trim(),
-  address: Joi.string().optional().trim(),
+  country: Joi.string().optional().trim(),
+  city: Joi.string().optional().trim(),
   type: Joi.string().optional().valid('sales', 'company').trim(),
   status: Joi.string().optional().valid('default','intersted', 'negotiation', 'demo_request', 'demo_done', 'reject', 'approve').trim(),
   sales_id: Joi.string().optional().trim(),
