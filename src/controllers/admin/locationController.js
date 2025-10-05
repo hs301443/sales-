@@ -58,3 +58,78 @@ export const createCity = asyncHandler(async (req, res) => {
     });
     return SuccessResponse(res, { message: 'City created successfully', data: city }, 201);
 });
+
+
+// edit country 
+export const editConuntry = asyncHandler(async (req, res) => {
+    const { countryId } = req.params;
+    const { name } = req.body;
+    const country = await Country.findOne({
+        _id: countryId,
+        isDeleted: false,
+    });
+    if (!country) {
+        throw new NotFound('Country not found');
+    }
+    country.name = name;
+    await country.save();
+    return SuccessResponse(res, { message: 'Country updated successfully', data: country }, 200);
+});
+// edit city
+export const editCity = asyncHandler(async (req, res) => {
+    const { cityId } = req.params;
+    const { name, countryId } = req.body;
+    const city = await City.findOne({
+        _id: cityId,
+        isDeleted: false,
+    });
+    if (!city) {
+        throw new NotFound('City not found');
+    }
+    const country = await Country.findOne({
+        _id: countryId,
+        isDeleted: false,
+    });
+    if (!country) {
+        throw new NotFound('Country not found');
+    }
+    city.name = name;
+    city.country = countryId;
+    await city.save();
+    return SuccessResponse(res, { message: 'City updated successfully', data: city }, 200);
+});
+
+// delete country
+export const deleteCountry = asyncHandler(async (req, res) => {
+    const { countryId } = req.params;
+    const country = await Country.findOne({
+        _id: countryId,
+        isDeleted: false,
+    });
+
+    if (!country) {
+        throw new NotFound('Country not found');
+    }
+
+    await country.remove();
+
+    return SuccessResponse(res, { message: 'Country deleted successfully' }, 200);
+});
+
+// delete city
+export const deleteCity = asyncHandler(async (req, res) => {
+    const { cityId } = req.params;
+    const city = await City.findOne({
+        _id: cityId,
+        isDeleted: false,
+    });
+
+    if (!city) {
+        throw new NotFound('City not found');
+    }
+
+    await city.remove();
+
+    return SuccessResponse(res, { message: 'City deleted successfully' }, 200);
+});
+

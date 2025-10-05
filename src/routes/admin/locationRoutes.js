@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAllCountries, createCountry, getAllCities, createCity } from '../../controllers/admin/locationController.js';
+import { getAllCountries, createCountry, getAllCities, createCity, editConuntry, editCity, deleteCountry, deleteCity } from '../../controllers/admin/locationController.js';
 import { verifyToken } from '../../middlewares/verifyToken.js';
 import { verifyRole } from '../../middlewares/verifyRole.js';
 import { Roles } from '../../utils/Roles.js';
@@ -15,5 +15,13 @@ router.route('/countries')
 router.route('/cities')
     .get(getAllCities)
     .post(createCity);
+
+router.route('/countries/:countryId')
+    .put(editConuntry)
+    .delete(deleteCountry);
+
+router.route('/cities/:cityId')
+    .put(editCity)
+    .delete(deleteCity);
 
 export default router;
