@@ -121,9 +121,15 @@ export const getAllLeads = asyncHandler(async (req, res) => {
   const sourceOptions = await Source.find({ status: 'Active', isDeleted: false })
     .select('_id name status').sort({ name: 1 });
 
+  const CountryOptions = await Country.find({ isDeleted: false })
+    .select('_id name').sort({ name: 1 });
+    
+  const CityOptions = await City.find({ isDeleted: false })
+    .select('_id name country').sort({ name: 1 });
+
   return SuccessResponse(res, {
     message: 'Leads retrieved successfully',
-    data: { leads, SalesOptions: activeSales, ActivityOptions: activityOptions, SourceOptions: sourceOptions }
+    data: { leads, SalesOptions: activeSales, ActivityOptions: activityOptions, SourceOptions: sourceOptions, CountryOptions, CityOptions }
   }, 200);
 });
 
