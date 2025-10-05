@@ -106,7 +106,7 @@ export const updateScheduledContact = asyncHandler(async (req, res) => {
     }
 
     // If user is Salesman, prevent them from changing sales_id to someone else
-    if (currentUser.role === 'Salesman' && sales_id !== currentUser.id) {
+    if (salesman.role === 'Salesman' && sales_id !== salesman.id) {
       return ErrorResponse(res, 403, { message: 'Salesman cannot assign contacts to other salespeople' });
     }
   }
@@ -142,7 +142,8 @@ export const updateScheduledContact = asyncHandler(async (req, res) => {
 export const getScheduledContactById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const currentUser = req.currentUser;
-  // Check if scheduled contact exists
+
+
   const scheduledContact = await ScheduledContacts.findOne({
     _id: id,
     isDeleted: false
