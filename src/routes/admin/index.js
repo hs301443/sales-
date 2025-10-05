@@ -15,6 +15,7 @@ import paymentRouter from "./paymentRoutes.js";
 import salesManagementRoutes from "./salesManagementRoutes.js";
 import commissionRoutes from "./commissionRoutes.js";
 import locationRoutes from "./locationRoutes.js";
+import popupOfferRoutes from "./popupOfferRoutes.js";
 
 export const route = Router();
 
@@ -34,5 +35,6 @@ route.use("/payments", paymentRouter);
 route.use("/sales-management", salesManagementRoutes);
 route.use("/commissions", commissionRoutes);
 route.use("/locations", locationRoutes);
+route.use("/popup-offers", popupOfferRoutes);
 
 export default route;

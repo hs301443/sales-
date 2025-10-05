@@ -7,6 +7,7 @@ import City from '../../models/modelschema/city.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 import salesPoint from '../../models/modelschema/salesPoint.js';
+import popupOffer from '../../models/modelschema/popupOffer.js';
 
 
 
@@ -633,6 +634,12 @@ export const HomeSales = asyncHandler(async (req, res) => {
   
   const my_point = mySalesPoints.reduce((sum, record) => sum + (record.point || 0), 0);
 
+  
+  const popupOffers = await popupOffer.find({ 
+    status: true,
+    isDeleted: false 
+  }).sort({ created_at: -1 }).limit(5); 
+
   return SuccessResponse(res, { 
     message: 'Sales targets details retrieved successfully', 
     data: {
@@ -643,7 +650,8 @@ export const HomeSales = asyncHandler(async (req, res) => {
       NoOfReject_my_leads: NoOfReject_my_leads,
       interestedCount: interestedCount,
       my_target: my_target,
-      my_point: my_point 
+      my_point: my_point,
+      popup_offers: popupOffers 
     }
   }, 200);
 });
