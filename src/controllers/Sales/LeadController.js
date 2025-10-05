@@ -42,16 +42,20 @@ export const viewAllLeads = asyncHandler(async (req, res) => {
       return { company_leads, my_leads };
     };
 
-    const [defaultLeads, active, transfer, demo, approved, rejected] = await Promise.all([
+    const [defaultLeads, intersted, negotiation, transfer, demo, approved, rejected] = await Promise.all([
       fetchLeads({
         status: 'default'
       }),
       fetchLeads({
-        status: { $in: ['intersted', 'negotiation'] },
+        status: { $in: ['intersted'] },
+        transfer: false,
+      }),
+       fetchLeads({
+        status: { $in: ['negotiation'] },
         transfer: false,
       }),
       fetchLeads({
-        status: { $in: ['intersted', 'negotiation'] },
+        status: { $in: ['intersted', 'negotiation', 'demo_request', 'demo_done', 'approve', 'reject'] },
         transfer: true,
       }),
       fetchLeads({
@@ -67,7 +71,8 @@ export const viewAllLeads = asyncHandler(async (req, res) => {
 
     return res.status(200).json({
       default: defaultLeads,
-      active,
+      intersted,
+      negotiation,
       transfer,
       demo,
       approved,
