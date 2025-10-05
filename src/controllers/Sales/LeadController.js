@@ -6,6 +6,7 @@ import Country from '../../models/modelschema/country.js';
 import City from '../../models/modelschema/city.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
+import salesPoint from '../../models/modelschema/salesPoint.js';
 
 
 
@@ -614,8 +615,23 @@ export const HomeSales = asyncHandler(async (req, res) => {
     return sum + (salesman.target_id?.point || 0);
   }, 0);
 
-  // Get the current salesman's target point
+  
   const my_target = salesmenWithTargets.length > 0 ? salesmenWithTargets[0].target_id?.point || 0 : 0;
+
+  
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1; 
+  const currentYear = currentDate.getFullYear();
+
+  const mySalesPoints = await salesPoint.find({
+    sales_id: sales_id,
+    month: currentMonth,
+    year: currentYear,
+    isDeleted: false
+  }).select('point').lean();
+
+  
+  const my_point = mySalesPoints.reduce((sum, record) => sum + (record.point || 0), 0);
 
   return SuccessResponse(res, { 
     message: 'Sales targets details retrieved successfully', 
@@ -626,8 +642,8 @@ export const HomeSales = asyncHandler(async (req, res) => {
       NoOfReject_company_leads: NoOfReject_company_leads,
       NoOfReject_my_leads: NoOfReject_my_leads,
       interestedCount: interestedCount,
-      total_target: totalTarget,
-      my_target: my_target 
+      my_target: my_target,
+      my_point: my_point 
     }
   }, 200);
 });
