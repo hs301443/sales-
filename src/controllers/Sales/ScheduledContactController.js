@@ -6,7 +6,8 @@ import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
 
 export const createScheduledContact = asyncHandler(async (req, res) => {
-  const { lead_id, sales_id, contact_date, contact_time ,notes } = req.body;
+  const { lead_id, contact_date, contact_time ,notes } = req.body;
+  const sales_id  = req.currentUser.id; 
 
   // Check if lead exists
   const lead = await Lead.findOne({ _id: lead_id, isDeleted: false });
@@ -15,7 +16,7 @@ export const createScheduledContact = asyncHandler(async (req, res) => {
   }
 
   // Check if salesman exists and has correct role
-  const salesman = await User.findOne({ _id: sales_id, isDeleted: false });
+  const salesman = await User.findById({ _id: sales_id, isDeleted: false });
   if (!salesman || salesman.role !== 'Salesman') {
     return ErrorResponse(res, 400, { message: 'Invalid sales_id' });
   }
@@ -32,7 +33,6 @@ export const createScheduledContact = asyncHandler(async (req, res) => {
 
   const populatedContact = await ScheduledContacts.findById(scheduledContact._id)
     .populate({ path: 'lead_id', select: 'name phone', match: { isDeleted: false } })
-    .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } });
 
   return SuccessResponse(res, { 
     message: 'Scheduled contact created successfully', 
@@ -60,22 +60,18 @@ export const getMyScheduledContacts = asyncHandler(async (req, res) => {
     const leadOptions = await Lead.find({ sales_id, isDeleted: false })
     .select('name phone address');
 
-    // sales options
-    const salesOptions = await User.find({ _id: sales_id, isDeleted: false })
-    .select('name');
-
   return SuccessResponse(res, { 
     message: 'Scheduled contacts retrieved successfully', 
     data: scheduledContacts,
-    leadOptions,
-    salesOptions 
+    leadOptions
   }, 200);
 });
 
 export const updateScheduledContact = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { lead_id, sales_id, contact_date, contact_time, notes, status } = req.body;
-  const currentUser = req.currentUser;
+  const { lead_id, contact_date, contact_time, notes, status } = req.body;
+  const sales_id  = req.currentUser.id; 
+
 
   // Check if scheduled contact exists and belongs to current user
   const existingContact = await ScheduledContacts.findOne({ 
@@ -88,8 +84,8 @@ export const updateScheduledContact = asyncHandler(async (req, res) => {
   }
 
   // If user is Salesman, ensure they can only update their own contacts
-  if (currentUser.role === 'Salesman') {
-    if (existingContact.sales_id.toString() !== currentUser.id) {
+  if (sales_id.role === 'Salesman') {
+    if (existingContact.sales_id.toString() !== sales_id.id) {
       return ErrorResponse(res, 403, { message: 'Access denied. You can only update your own scheduled contacts' });
     }
   }
@@ -153,12 +149,14 @@ export const getScheduledContactById = asyncHandler(async (req, res) => {
   })
   .populate({ path: 'lead_id', select: 'name phone', match: { isDeleted: false } })
   .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } });
+  
   if (!scheduledContact) {
     return ErrorResponse(res, 404, { message: 'Scheduled contact not found' });
   }
+  
   // If user is Salesman, ensure they can only access their own contacts
   if (currentUser.role === 'Salesman') {
-    if (scheduledContact.sales_id._id.toString() !== currentUser.id) {
+    if (scheduledContact.sales_id && scheduledContact.sales_id._id.toString() !== currentUser.id) {
       return ErrorResponse(res, 403, { message: 'Access denied. You can only access your own scheduled contacts' });
     }
   }

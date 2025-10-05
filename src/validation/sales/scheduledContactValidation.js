@@ -2,7 +2,6 @@ import Joi from "joi";
 
 export const createScheduledContactValidation = Joi.object({ 
   lead_id: Joi.string().hex().length(24).required().trim(),
-  sales_id: Joi.string().hex().length(24).required().trim(),
   contact_date: Joi.date().required(),
   contact_time: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).required(), // HH:MM format
   notes: Joi.string().required().trim(),
@@ -11,7 +10,6 @@ export const createScheduledContactValidation = Joi.object({
 
 export const updateScheduledContactValidation = Joi.object({
   lead_id: Joi.string().hex().length(24).optional().trim(),
-  sales_id: Joi.string().hex().length(24).optional().trim(),
   contact_date: Joi.date().optional(),
   contact_time: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(), // HH:MM format
   notes: Joi.string().optional().trim(),
