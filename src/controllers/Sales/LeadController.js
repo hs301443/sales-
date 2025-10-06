@@ -8,6 +8,7 @@ import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 import salesPoint from '../../models/modelschema/salesPoint.js';
 import popupOffer from '../../models/modelschema/popupOffer.js';
+import { PopupOfferRead } from '../../models/modelschema/popupOfferRead.js';
 
 
 
@@ -246,7 +247,7 @@ export const getLeadById = asyncHandler(async (req, res) => {
 export const createLead = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id;
-    const { name, phone, country, city, activity_id, source_name } = req.body; 
+    const { name, phone, country, city, activity_id, source_id } = req.body; 
 
     
     if (!name || !phone || !country || !city || !activity_id) {
@@ -284,25 +285,13 @@ export const createLead = asyncHandler(async (req, res) => {
       return ErrorResponse(res, 400, { message: 'Lead with this phone number already exists' });
     }
 
-    let sourceId = null;
-
-    if (source_name) {  
-      const existingSource = await Source.findOne({ 
-        name: source_name,
-        isDeleted: false 
-      });
-      
-      if (existingSource) {
-        sourceId = existingSource._id;
-      } else {
-        const source = await Source.create({
-          name: source_name,
-          status: 'Active',
-        });
-        sourceId = source._id;
-      }
+     // Check source_id exists if provided
+  if (source_id) {
+    const source = await Source.findById(source_id);
+    if (!source) {
+      return ErrorResponse(res, 400, { message: 'Invalid source_id' });
     }
-
+  }
     
     const lead = await Lead.create({
       name,
@@ -313,7 +302,7 @@ export const createLead = asyncHandler(async (req, res) => {
       sales_id: userId,
       status: 'default',
       activity_id,
-      source_id: sourceId, //  be null if no source_name provided
+      source_id
     });
 
     const populatedLead = await Lead.findById(lead._id)
@@ -573,35 +562,30 @@ export const HomeSales = asyncHandler(async (req, res) => {
   }
 
   const totalLeadsCount = await Lead.countDocuments({ sales_id: sales_id });
-
   const NoOfApprove_company_leads = await Lead.countDocuments({
     sales_id: sales_id,
     type: 'company',
     status: 'approve', 
     isDeleted: false,
   });
-
   const NoOfApprove_my_leads = await Lead.countDocuments({
     sales_id: sales_id,
     type: 'sales',
     status: 'approve', 
     isDeleted: false,
   });
-
   const NoOfReject_company_leads = await Lead.countDocuments({
     sales_id: sales_id,
     type: 'company',
     status: 'reject', 
     isDeleted: false,
   });
-
   const NoOfReject_my_leads = await Lead.countDocuments({
     sales_id: sales_id,
     type: 'sales',
     status: 'reject', 
     isDeleted: false,
   });
-
   const interestedCount = await Lead.countDocuments({ 
     status: 'intersted', 
     sales_id: sales_id
@@ -611,35 +595,39 @@ export const HomeSales = asyncHandler(async (req, res) => {
     _id: sales_id, 
     target_id: { $exists: true, $ne: null } 
   }).populate('target_id');
-
+  
   const totalTarget = salesmenWithTargets.reduce((sum, salesman) => {
     return sum + (salesman.target_id?.point || 0);
   }, 0);
-
   
   const my_target = salesmenWithTargets.length > 0 ? salesmenWithTargets[0].target_id?.point || 0 : 0;
-
   
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1; 
   const currentYear = currentDate.getFullYear();
-
+  
   const mySalesPoints = await salesPoint.find({
     sales_id: sales_id,
     month: currentMonth,
     year: currentYear,
     isDeleted: false
   }).select('point').lean();
-
   
   const my_point = mySalesPoints.reduce((sum, record) => sum + (record.point || 0), 0);
-
+  
+  
+  const readPopupOfferIds = await PopupOfferRead.find({ 
+    sales_id: sales_id,
+    isRead: true 
+  }).distinct('popup_offer_id');
+  
   
   const popupOffers = await popupOffer.find({ 
     status: true,
-    isDeleted: false 
+    isDeleted: false,
+    _id: { $nin: readPopupOfferIds } 
   }).sort({ created_at: -1 }).limit(5); 
-
+  
   return SuccessResponse(res, { 
     message: 'Sales targets details retrieved successfully', 
     data: {
