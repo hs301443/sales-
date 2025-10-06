@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
 export const viewProduct = asyncHandler(async (req, res) => {
-   const products = await Product.find({ isDeleted: false })
+   const products = await Product.find({ status: true , isDeleted: false })
     .select('-isDeleted')
     .sort({ created_at: -1 })
   
