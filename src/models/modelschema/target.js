@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
   point:{
     type: Number,
     required: [true, "Point is required"],
+    min: [0, 'Point must be a positive number'],
     default:0
   },
    status: {
