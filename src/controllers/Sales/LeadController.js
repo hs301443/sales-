@@ -426,7 +426,7 @@ export const deleteLead = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id; 
     const id = req.params.id; 
-    const lead = await Lead.findOne({_id:id, sales_id: userId, type: 'sales'});
+    const lead = await Lead.findOne({_id:id, sales_id: userId, type: 'sales', isDeleted: false});
   
     if (!lead) {
       throw new NotFound('Lead not found');
