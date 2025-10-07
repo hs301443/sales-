@@ -236,7 +236,9 @@ export const getLeadById = asyncHandler(async (req, res) => {
       .select('-isDeleted')
       .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
       .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
-      .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } });
+      .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } })
+      .populate({ path: 'country', select: 'name', match: { isDeleted: false } })
+      .populate({ path: 'city', select: 'name', match: { isDeleted: false } });
 
     return res.status(200).json({ lead });
   } catch (error) {
@@ -423,8 +425,8 @@ export const updateLead = asyncHandler(async (req, res) => {
 export const deleteLead = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id; 
-    const id = req.body.id; 
-    const lead = await Lead.findOne({_id:id, sales_id: userId});
+    const id = req.params.id; 
+    const lead = await Lead.findOne({_id:id, sales_id: userId, type: 'sales'});
   
     if (!lead) {
       throw new NotFound('Lead not found');
