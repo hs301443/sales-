@@ -647,3 +647,11 @@ export const getAllCountryAndCity = asyncHandler(async (req, res) => {
   }, 200);
 });
 
+
+export const getAllSources = asyncHandler(async (req, res) => {
+  const sources = await Source.find({ isDeleted: false, status: 'Active' })
+    .select('-isDeleted')
+    .sort({ created_at: -1 });
+
+  return SuccessResponse(res, { message: 'Sources retrieved successfully', data: sources }, 200);
+});
