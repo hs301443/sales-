@@ -9,7 +9,7 @@ import { Roles } from '../../utils/Roles.js';
 const router = express.Router();
 
 router.use(verifyToken);
-router.use(verifyRole(Roles.ADMIN));
+router.use(verifyRole(Roles.ADMIN, Roles.SALESMAN));
 
 router.route('/')
     .get(getAllSources)

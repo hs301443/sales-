@@ -339,7 +339,7 @@ export const updateLead = asyncHandler(async (req, res) => {
             return ErrorResponse(res, 403, { message: 'You are not authorized to update this lead' });
         }
 
-        const { name, phone, country, city, status, activity_id, source_name } = req.body;
+        const { name, phone, country, city, status, activity_id, source_id } = req.body;
 
         
         if (activity_id) {
@@ -382,31 +382,15 @@ export const updateLead = asyncHandler(async (req, res) => {
             }
         }
 
-        let sourceId = lead.source_id;
-
-        
-        if (source_name !== undefined) {
-            if (source_name === "" || source_name === null) {
-                sourceId = null;
-            } else {
-                const existingSource = await Source.findOne({ 
-                    name: source_name,
-                    isDeleted: false 
-                });
-                
-                if (existingSource) {
-                    sourceId = existingSource._id;
-                } else {
-                    const source = await Source.create({
-                        name: source_name,
-                        status: 'Active',
-                    });
-                    sourceId = source._id;
-                }
-            }
+        if(source_id) {
+          const source = await Source.findById(source_id);
+          if(!source) {
+            return ErrorResponse(res, 400, { message: 'Invalid source_id' });
+          }
         }
 
-        
+        const sourceId = source_id || lead.source_id;
+
         lead.name = name || lead.name;
         lead.phone = phone || lead.phone;
         lead.country = country || lead.country;
