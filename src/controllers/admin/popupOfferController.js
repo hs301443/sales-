@@ -81,7 +81,7 @@ export const updatePopupOffer = asyncHandler(async (req, res) => {
   if (req.body.image) {
     const base64 = req.body.image;
     const folder = 'popup-offers';
-    const imageUrl = await saveBase64Image(base64, req.user._id, req, folder);
+    const imageUrl = await saveBase64Image(base64, req.currentUser.id, req, folder);
     updateData.image = imageUrl;
     
 
