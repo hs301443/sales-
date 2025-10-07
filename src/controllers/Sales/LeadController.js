@@ -572,6 +572,21 @@ export const HomeSales = asyncHandler(async (req, res) => {
     status: 'reject', 
     isDeleted: false,
   });
+
+  // number od transfer
+  const NoOfTransfer_company_leads = await Lead.countDocuments({
+    sales_id: sales_id,
+    type: 'company',
+    transfer: true, 
+    isDeleted: false,
+  });
+  const NoOfTransfer_my_leads = await Lead.countDocuments({
+    sales_id: sales_id,
+    type: 'sales',
+    transfer: true, 
+    isDeleted: false,
+  });
+
   const interestedCount = await Lead.countDocuments({ 
     status: 'intersted', 
     sales_id: sales_id
@@ -625,7 +640,9 @@ export const HomeSales = asyncHandler(async (req, res) => {
       interestedCount: interestedCount,
       my_target: my_target,
       my_point: my_point,
-      popup_offers: popupOffers 
+      popup_offers: popupOffers,
+      NoOfTransfer_company_leads,
+      NoOfTransfer_my_leads 
     }
   }, 200);
 });
