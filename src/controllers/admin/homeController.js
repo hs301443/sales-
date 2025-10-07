@@ -7,7 +7,6 @@ import Sales from '../../models/modelschema/sales.js';
 import Payment from '../../models/modelschema/payment.js';
 import Product from '../../models/modelschema/product.js';
 import Offer from '../../models/modelschema/Offer.js';
-import PaymentMethod from '../../models/modelschema/paymentMethod.js';
 import Activity from '../../models/modelschema/activity.js';
 import PopupOffer from '../../models/modelschema/popupOffer.js';
 import Commission from '../../models/modelschema/commision.js';
@@ -35,7 +34,6 @@ export const viewAdminHome = asyncHandler(async (req, res) => {
             revenueSum,
             totalProducts,
             totalOffers,
-            totalPaymentMethods,
             totalActivities,
             totalPopupOffers,
             totalCommissions,
@@ -55,7 +53,6 @@ export const viewAdminHome = asyncHandler(async (req, res) => {
             ]),
             Product.countDocuments({ ...filters }),
             Offer.countDocuments({ ...filters }),
-            PaymentMethod.countDocuments({ ...filters }),
             Activity.countDocuments({ ...filters }),
             PopupOffer.countDocuments({ ...filters }),
             Commission.countDocuments({ ...filters }),
@@ -101,7 +98,6 @@ export const viewAdminHome = asyncHandler(async (req, res) => {
                 revenue: totalRevenue,
                 products: totalProducts,
                 offers: totalOffers,
-                paymentMethods: totalPaymentMethods,
                 activities: totalActivities,
                 popupOffers: totalPopupOffers,
                 commissions: totalCommissions,
