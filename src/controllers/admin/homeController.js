@@ -1,15 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
-import mongoose from 'mongoose';
-import User from '../../models/modelschema/User.js';
-import Lead from '../../models/modelschema/lead.js';
-import Sales from '../../models/modelschema/sales.js';
-import Payment from '../../models/modelschema/payment.js';
-import Product from '../../models/modelschema/product.js';
-import Offer from '../../models/modelschema/Offer.js';
-import Activity from '../../models/modelschema/activity.js';
-import PopupOffer from '../../models/modelschema/popupOffer.js';
-import Commission from '../../models/modelschema/commision.js';
+import prisma from '../../lib/prisma.js';
 
 export const viewAdminHome = asyncHandler(async (req, res) => {
     try {
@@ -41,51 +32,35 @@ export const viewAdminHome = asyncHandler(async (req, res) => {
             recentSales,
             recentPayments
         ] = await Promise.all([
-            User.countDocuments({ ...filters }),
-            User.countDocuments({ ...filters, role: 'Salesman' }),
-            User.countDocuments({ ...filters, role: 'Sales Leader' }),
-            Lead.countDocuments({ ...filters }),
-            Sales.countDocuments({ ...filters }),
-            Payment.countDocuments({ ...filters }),
-            Payment.aggregate([
-                { $match: { ...filters, ...(dateFilter.$gte ? { payment_date: dateFilter } : {}) } },
-                { $group: { _id: null, total: { $sum: '$amount' } } }
-            ]),
-            Product.countDocuments({ ...filters }),
-            Offer.countDocuments({ ...filters }),
-            Activity.countDocuments({ ...filters }),
-            PopupOffer.countDocuments({ ...filters }),
-            Commission.countDocuments({ ...filters }),
-            Lead.find({ ...filters, ...(dateFilter.$gte ? { created_at: dateFilter } : {}) })
-                .sort({ created_at: -1 })
-                .limit(5)
-                .select('name phone status created_at')
-                .lean(),
-            Sales.find({ ...filters, ...(dateFilter.$gte ? { sale_date: dateFilter } : {}) })
-                .sort({ sale_date: -1 })
-                .limit(5)
-                .select('status sale_date item_type')
-                .lean(),
-            Payment.find({ ...filters, ...(dateFilter.$gte ? { payment_date: dateFilter } : {}) })
-                .sort({ payment_date: -1 })
-                .limit(5)
-                .select('amount payment_date')
-                .lean(),
+            prisma.user.count({ where: { ...filters } }),
+            prisma.user.count({ where: { ...filters, role: 'Salesman' } }),
+            prisma.user.count({ where: { ...filters, role: 'Sales_Leader' } }),
+            prisma.lead.count({ where: { ...filters } }),
+            prisma.sales.count({ where: { ...filters } }),
+            prisma.payment.count({ where: { ...filters } }),
+            prisma.payment.aggregate({
+                _sum: { amount: true },
+                where: { ...filters, ...(dateFilter.$gte ? { payment_date: { gte: dateFilter.$gte, lte: dateFilter.$lte } } : {}) }
+            }),
+            prisma.product.count({ where: { ...filters } }),
+            prisma.offer.count({ where: { ...filters } }),
+            prisma.activity.count({ where: { ...filters } }),
+            prisma.popupOffer ? prisma.popupOffer.count({ where: { ...filters } }) : Promise.resolve(0),
+            prisma.commission.count({ where: { ...filters } }),
+            prisma.lead.findMany({ where: { ...filters, ...(dateFilter.$gte ? { created_at: { gte: dateFilter.$gte, lte: dateFilter.$lte } } : {}) }, orderBy: { created_at: 'desc' }, take: 5, select: { id: true, name: true, phone: true, status: true, created_at: true } }),
+            prisma.sales.findMany({ where: { ...filters, ...(dateFilter.$gte ? { sale_date: { gte: dateFilter.$gte, lte: dateFilter.$lte } } : {}) }, orderBy: { sale_date: 'desc' }, take: 5, select: { id: true, status: true, sale_date: true, item_type: true } }),
+            prisma.payment.findMany({ where: { ...filters, ...(dateFilter.$gte ? { payment_date: { gte: dateFilter.$gte, lte: dateFilter.$lte } } : {}) }, orderBy: { payment_date: 'desc' }, take: 5, select: { id: true, amount: true, payment_date: true } }),
         ]);
 
-        const totalRevenue = Array.isArray(revenueSum) && revenueSum[0] ? revenueSum[0].total : 0;
+        const totalRevenue = revenueSum?._sum?.amount || 0;
 
        
-        const [leadStatusBreakdown, salesStatusBreakdown] = await Promise.all([
-            Lead.aggregate([
-                { $match: { ...filters, ...(dateFilter.$gte ? { created_at: dateFilter } : {}) } },
-                { $group: { _id: '$status', count: { $sum: 1 } } }
-            ]),
-            Sales.aggregate([
-                { $match: { ...filters, ...(dateFilter.$gte ? { sale_date: dateFilter } : {}) } },
-                { $group: { _id: '$status', count: { $sum: 1 } } }
-            ])
+        const [leadStatusBreakdownData, salesStatusBreakdownData] = await Promise.all([
+            prisma.lead.groupBy({ by: ['status'], _count: { status: true }, where: { ...filters, ...(dateFilter.$gte ? { created_at: { gte: dateFilter.$gte, lte: dateFilter.$lte } } : {}) } }),
+            prisma.sales.groupBy({ by: ['status'], _count: { status: true }, where: { ...filters, ...(dateFilter.$gte ? { sale_date: { gte: dateFilter.$gte, lte: dateFilter.$lte } } : {}) } }),
         ]);
+        const leadStatusBreakdown = leadStatusBreakdownData.map(r => ({ _id: r.status, count: r._count.status }));
+        const salesStatusBreakdown = salesStatusBreakdownData.map(r => ({ _id: r.status, count: r._count.status }));
 
         const response = {
             totals: {

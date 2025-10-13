@@ -1,6 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import bcrypt from 'bcrypt';
-import User from '../../models/modelschema/User.js';
+import prisma from '../../lib/prisma.js';
 import { BadRequest } from '../../Errors/BadRequest.js';
 import { SuccessResponse } from '../../utils/response.js';
 import  { generateJWT }  from '../../middlewares/generateJWT.js';
@@ -19,7 +19,7 @@ import  { generateJWT }  from '../../middlewares/generateJWT.js';
 });*/
 
 export const login = asyncHandler(async (req, res) => {
-  const user = await User.findOne({ email: req.body.email, isDeleted: false });
+  const user = await prisma.user.findFirst({ where: { email: req.body.email, isDeleted: false } });
 
   if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
     throw new BadRequest('Incorrect email or password');

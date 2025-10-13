@@ -1,5 +1,5 @@
 import { saveBase64Image } from '../../utils/handleImages.js';
-import PaymentMethod from '../../models/modelschema/paymentmethod.js';
+import prisma from '../../lib/prisma.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 import { NotFound } from '../../Errors/NotFound.js';
@@ -11,11 +11,8 @@ export const createPaymentMethod = asyncHandler(async (req, res) => {
     const base64 = req.body.logo_url;
     const folder = 'payment-methods';
     const imageUrl = await saveBase64Image(base64, userId, req, folder);
-    const paymentMethod = await PaymentMethod.create({
-      name,
-      description,
-      status,
-      logo_url: imageUrl,
+    const paymentMethod = await prisma.paymentMethod.create({
+      data: { name, description, status, logo_url: imageUrl }
     });
     return SuccessResponse(res, { message: 'Payment method created successfully', data: paymentMethod }, 201);
 
@@ -23,17 +20,15 @@ export const createPaymentMethod = asyncHandler(async (req, res) => {
 
 export const getAllPaymentMethods = asyncHandler(async (req, res) => {
   
-    const paymentMethods = await PaymentMethod.find({ isDeleted: false })
-      .select('-isDeleted')
-      .sort({ createdAt: -1 });
+    const paymentMethods = await prisma.paymentMethod.findMany({ where: { isDeleted: false }, orderBy: { id: 'desc' } });
     return SuccessResponse(res, { message: 'Payment methods retrieved successfully', data: paymentMethods }, 200);
  
 });
 
 export const getPaymentMethodById = asyncHandler(async (req, res) => {
   
-    const id = req.params.id;
-    const paymentMethod = await PaymentMethod.findOne({ _id: id, isDeleted: false }).select('-isDeleted');
+    const id = Number(req.params.id);
+    const paymentMethod = await prisma.paymentMethod.findFirst({ where: { id, isDeleted: false } });
     if (!paymentMethod) {
       throw new NotFound('Payment method not found');
     }
@@ -43,8 +38,8 @@ export const getPaymentMethodById = asyncHandler(async (req, res) => {
 
 export const updatePaymentMethod = asyncHandler(async (req, res) => {
  
-    const id = req.params.id;
-    const paymentMethod = await PaymentMethod.findById(id);
+    const id = Number(req.params.id);
+    const paymentMethod = await prisma.paymentMethod.findUnique({ where: { id } });
     if (!paymentMethod) {
       throw new NotFound('Payment method not found', 404);
     }
@@ -53,25 +48,25 @@ export const updatePaymentMethod = asyncHandler(async (req, res) => {
     if (base64) {
       const folder = 'payment-methods';
       const imageUrl = await saveBase64Image(base64, req.currentUser.id, req, folder);
-      paymentMethod.logo_url = imageUrl;
+      await prisma.paymentMethod.update({ where: { id }, data: { logo_url: imageUrl } });
     }
-    paymentMethod.name = name || paymentMethod.name;
-    paymentMethod.description = description || paymentMethod.description;
-    paymentMethod.status = status || paymentMethod.status;
-    await paymentMethod.save();
-    return SuccessResponse(res, { message: 'Payment method updated successfully', data: paymentMethod }, 200);
+    const updated = await prisma.paymentMethod.update({ where: { id }, data: {
+      name: name ?? undefined,
+      description: description ?? undefined,
+      status: status ?? undefined,
+    }});
+    return SuccessResponse(res, { message: 'Payment method updated successfully', data: updated }, 200);
   
 });
 
 export const deletePaymentMethod = asyncHandler(async (req, res) => {
  
-    const id = req.params.id;
-    const paymentMethod = await PaymentMethod.findById(id);
+    const id = Number(req.params.id);
+    const paymentMethod = await prisma.paymentMethod.findUnique({ where: { id } });
     if (!paymentMethod || paymentMethod.isDeleted) {
       throw new NotFound('Payment method not found');
     }
-    paymentMethod.isDeleted = true;
-    await paymentMethod.save();
+    await prisma.paymentMethod.update({ where: { id }, data: { isDeleted: true } });
     return SuccessResponse(res, { message: 'Payment method deleted successfully' }, 200);
 
 });

@@ -1,5 +1,5 @@
 import asyncHandler from 'express-async-handler';
-import PopupOffer from '../../models/modelschema/popupOffer.js'; 
+import prisma from '../../lib/prisma.js'; 
 import { saveBase64Image } from '../../utils/handleImages.js';
 
 
@@ -12,12 +12,7 @@ const userId = req.currentUser.id;
       const imageUrl = await saveBase64Image(base64, userId, req, folder);
 
   // Create popup offer
-  const popupOffer = await PopupOffer.create({
-    title,
-    image: imageUrl,
-    link,
-    status: req.body.status !== undefined ? req.body.status : true,
-  });
+  const popupOffer = await prisma.popupOffer.create({ data: { title, image: imageUrl, link, status: req.body.status !== undefined ? Boolean(req.body.status) : true } });
 
   res.status(201).json({
     success: true,
@@ -28,8 +23,7 @@ const userId = req.currentUser.id;
 
 
 export const getPopupOffers = asyncHandler(async (req, res) => {
-  const popupOffers = await PopupOffer.find({ isDeleted: false })
-    .sort({ created_at: -1 });
+  const popupOffers = await prisma.popupOffer.findMany({ where: { isDeleted: false }, orderBy: { created_at: 'desc' } });
 
   res.status(200).json({
     success: true,
@@ -40,10 +34,7 @@ export const getPopupOffers = asyncHandler(async (req, res) => {
 
 
 export const getPopupOfferById = asyncHandler(async (req, res) => {
-  const popupOffer = await PopupOffer.findOne({
-    _id: req.params.id,
-    isDeleted: false,
-  });
+  const popupOffer = await prisma.popupOffer.findFirst({ where: { id: Number(req.params.id), isDeleted: false } });
 
   if (!popupOffer) {
     res.status(404);
@@ -60,10 +51,7 @@ export const getPopupOfferById = asyncHandler(async (req, res) => {
 export const updatePopupOffer = asyncHandler(async (req, res) => {
   const { title, link, status } = req.body;
 
-  let popupOffer = await PopupOffer.findOne({
-    _id: req.params.id,
-    isDeleted: false,
-  });
+  let popupOffer = await prisma.popupOffer.findFirst({ where: { id: Number(req.params.id), isDeleted: false } });
 
   if (!popupOffer) {
     res.status(404);
@@ -72,9 +60,9 @@ export const updatePopupOffer = asyncHandler(async (req, res) => {
 
   
   const updateData = {
-    title: title || popupOffer.title,
-    link: link || popupOffer.link,
-    status: status !== undefined ? status : popupOffer.status,
+    title: title ?? popupOffer.title,
+    link: link ?? popupOffer.link,
+    status: status !== undefined ? Boolean(status) : popupOffer.status,
   };
 
   // Handle image update if provided
@@ -89,14 +77,7 @@ export const updatePopupOffer = asyncHandler(async (req, res) => {
   }
 
   // Update the popup offer
-  const updatedPopupOffer = await PopupOffer.findByIdAndUpdate(
-    req.params.id,
-    updateData,
-    { 
-      new: true, 
-      runValidators: true 
-    }
-  );
+  const updatedPopupOffer = await prisma.popupOffer.update({ where: { id: Number(req.params.id) }, data: updateData });
 
   res.status(200).json({
     success: true,
@@ -106,10 +87,7 @@ export const updatePopupOffer = asyncHandler(async (req, res) => {
 });
 
 export const deletePopupOffer = asyncHandler(async (req, res) => {
-  const popupOffer = await PopupOffer.findOne({
-    _id: req.params.id,
-    isDeleted: false,
-  });
+  const popupOffer = await prisma.popupOffer.findFirst({ where: { id: Number(req.params.id), isDeleted: false } });
 
   if (!popupOffer) {
     res.status(404);
@@ -117,8 +95,7 @@ export const deletePopupOffer = asyncHandler(async (req, res) => {
   }
 
   // Soft delete
-  popupOffer.isDeleted = true;
-  await popupOffer.save();
+  await prisma.popupOffer.update({ where: { id: Number(req.params.id) }, data: { isDeleted: true } });
 
   res.status(200).json({
     success: true,

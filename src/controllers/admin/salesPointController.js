@@ -1,5 +1,4 @@
-import Sales from '../../models/modelschema/sales.js';
-import SalesPoint from '../../models/modelschema/salesPoint.js';
+import prisma from '../../lib/prisma.js';
 import { NotFound } from '../../Errors/NotFound.js'
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
@@ -10,9 +9,7 @@ export const approveSale = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { points } = req.body;
 
-    // Find the sale by ID
-    const sale = await Sales.findById(id)
-      .populate('lead_id sales_id product_id offer_id payment_id');
+    const sale = await prisma.sales.findUnique({ where: { id: Number(id) }, select: { id: true, status: true, sales_id: true } });
 
     if (!sale) {
       ErrorResponse(res, 404, 'Sale not found');
@@ -28,43 +25,22 @@ export const approveSale = asyncHandler(async (req, res) => {
       ErrorResponse(res, 400, 'Points must be a positive number');
     }
 
-    // Update sale status to approved
-    sale.status = 'Approve';
-    await sale.save();
+    await prisma.sales.update({ where: { id: Number(id) }, data: { status: 'Approve' } });
 
     // Get current month and year
     const currentDate = new Date();
     const month = currentDate.getMonth() + 1; // getMonth() returns 0-11
     const year = currentDate.getFullYear();
 
-    // Check if salesperson already has points for this month/year
-    const existingSalesPoint = await SalesPoint.findOne({
-      sales_id: sale.sales_id,
-      month: month,
-      year: year
-    });
-
-    let salesPoint;
-
-    if (existingSalesPoint) {
-      // Update existing points
-      existingSalesPoint.point += points;
-      salesPoint = await existingSalesPoint.save();
-    } else {
-      // Create new sales point record
-      salesPoint = new SalesPoint({
-        point: points,
-        month: month,
-        year: year,
-        sales_id: sale.sales_id
-      });
-      await salesPoint.save();
-    }
+    const existing = await prisma.salesPoint.findFirst({ where: { sales_id: sale.sales_id, month, year } });
+    const salesPoint = existing
+      ? await prisma.salesPoint.update({ where: { id: existing.id }, data: { point: existing.point + Number(points) } })
+      : await prisma.salesPoint.create({ data: { sales_id: sale.sales_id, month, year, point: Number(points) } });
 
     return SuccessResponse(res, {
       message: 'Sale approved successfully and points allocated',
       data: {
-        sale: sale,
+        sale: { id: sale.id, status: 'Approve' },
         salesPoint: salesPoint,
         pointsAwarded: points
       }

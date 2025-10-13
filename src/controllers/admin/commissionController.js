@@ -1,4 +1,4 @@
-import Commission from '../../models/modelschema/commision.js';
+import prisma from '../../lib/prisma.js';
 import asyncHandler from 'express-async-handler';
 import { NotFound } from '../../Errors/NotFound.js';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
@@ -12,30 +12,32 @@ export const createCommission = asyncHandler(async (req, res) => {
   } = req.body;
 
   // Check if commission level with same point threshold already exists
-  const existingCommission = await Commission.findOne({ point_threshold });
+  const existingCommission = await prisma.commission.findFirst({ where: { point_threshold: Number(point_threshold) } });
   if (existingCommission) {
     return ErrorResponse(res, 400, { message: 'Commission level with this point threshold already exists' });
   }
 
-  const commission = await Commission.create({
-    point_threshold,
-    amount,
-    type,
-    level_name
+  const commission = await prisma.commission.create({
+    data: {
+      point_threshold: Number(point_threshold),
+      amount: Number(amount),
+      type,
+      level_name,
+    }
   });
 
   return SuccessResponse(res, { message: 'Commission created successfully', data: commission }, 201);
 });
 
 export const getAllCommissions = asyncHandler(async (req, res) => {
-  const commissions = await Commission.find({ isDeleted: false }).select('-isDeleted').sort({ point_threshold: 1 });
+  const commissions = await prisma.commission.findMany({ where: { isDeleted: false }, orderBy: { point_threshold: 'asc' } });
 
   return SuccessResponse(res, { message: 'Commissions retrieved successfully', data: commissions }, 200);
 });
 
 export const getCommissionById = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const commission = await Commission.findOne({ _id: id, isDeleted: false }).select('-isDeleted');
+  const id = Number(req.params.id);
+  const commission = await prisma.commission.findFirst({ where: { id, isDeleted: false } });
 
   if (!commission) {
     throw new NotFound('Commission not found');
@@ -45,8 +47,8 @@ export const getCommissionById = asyncHandler(async (req, res) => {
 });
 
 export const updateCommission = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const commission = await Commission.findById(id);
+  const id = Number(req.params.id);
+  const commission = await prisma.commission.findUnique({ where: { id } });
 
   if (!commission) {
     throw new NotFound('Commission not found');
@@ -60,37 +62,34 @@ export const updateCommission = asyncHandler(async (req, res) => {
   } = req.body;
 
   // Check if point_threshold is being updated and if it conflicts with another commission
-  if (point_threshold && point_threshold !== commission.point_threshold) {
-    const existingCommission = await Commission.findOne({ 
-      point_threshold, 
-      _id: { $ne: id } 
-    });
+  if (point_threshold && Number(point_threshold) !== commission.point_threshold) {
+    const existingCommission = await prisma.commission.findFirst({ where: { point_threshold: Number(point_threshold), NOT: { id } } });
     if (existingCommission) {
       return ErrorResponse(res, 400, { message: 'Commission level with this point threshold already exists' });
     }
-    commission.point_threshold = point_threshold;
   }
+  const updated = await prisma.commission.update({
+    where: { id },
+    data: {
+      point_threshold: point_threshold !== undefined ? Number(point_threshold) : undefined,
+      amount: amount !== undefined ? Number(amount) : undefined,
+      type: type ?? undefined,
+      level_name: level_name ?? undefined,
+    }
+  });
 
-  if (amount !== undefined) commission.amount = amount;
-  if (type) commission.type = type;
-  if (level_name) commission.level_name = level_name;
-
-  await commission.save();
-
-  return SuccessResponse(res, { message: 'Commission updated successfully', data: commission }, 200);
+  return SuccessResponse(res, { message: 'Commission updated successfully', data: updated }, 200);
 });
 
 export const deleteCommission = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const commission = await Commission.findById(id);
+  const id = Number(req.params.id);
+  const commission = await prisma.commission.findUnique({ where: { id } });
 
   if (!commission || commission.isDeleted) {
     throw new NotFound('Commission not found');
   }
 
-  commission.isDeleted = true;
-  await commission.save();
-
+  await prisma.commission.update({ where: { id }, data: { isDeleted: true } });
   return SuccessResponse(res, { message: 'Commission deleted successfully' }, 200);
 });
 
@@ -104,9 +103,10 @@ export const getCommissionByPoints = asyncHandler(async (req, res) => {
 
   // Find the commission level where point_threshold is <= the given points
   // and get the highest threshold that meets the criteria
-  const commission = await Commission.findOne({
-    point_threshold: { $lte: numericPoints }
-  }).sort({ point_threshold: -1 });
+  const commission = await prisma.commission.findFirst({
+    where: { point_threshold: { lte: numericPoints } },
+    orderBy: { point_threshold: 'desc' }
+  });
 
   if (!commission) {
     return ErrorResponse(res, 404, { message: 'No commission level found for the given points' });

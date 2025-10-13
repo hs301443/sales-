@@ -1,9 +1,4 @@
-import Lead from '../../models/modelschema/lead.js'; 
-import Activity from '../../models/modelschema/activity.js';
-import User from '../../models/modelschema/User.js';
-import Source from '../../models/modelschema/Source.js';
-import Country from '../../models/modelschema/country.js';
-import City from '../../models/modelschema/city.js';
+import prisma from '../../lib/prisma.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 import salesPoint from '../../models/modelschema/salesPoint.js';
@@ -16,32 +11,48 @@ export const viewAllLeads = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id;
     const baseFilter = {
-      sales_id: userId,
+      sales_id: Number(userId),
       isDeleted: false,
+      type: 'sales',
     };
 
  
     const fetchLeads = async (additionalFilters) => {
-      const filter = { ...baseFilter, ...additionalFilters };
-      
+      const where = { ...baseFilter, ...additionalFilters };
       const [company_leads, my_leads] = await Promise.all([
-        Lead.find({ ...filter, type: 'company' })
-          .select('_id name phone address status type created_at')
-          .sort({ created_at: -1 })
-          .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
-          .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
-          .populate({ path: 'country', select: 'name', match: { isDeleted: false } })
-          .populate({ path: 'city', select: 'name', match: { isDeleted: false } }),
-        
-        Lead.find({ ...filter, type: 'sales' })
-          .select('_id name phone address status type created_at')
-          .sort({ created_at: -1 })
-          .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
-          .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
-          .populate({ path: 'country', select: 'name', match: { isDeleted: false } })
-          .populate({ path: 'city', select: 'name', match: { isDeleted: false } }),
+        prisma.lead.findMany({
+          where: { ...where, type: 'company' },
+          orderBy: { created_at: 'desc' },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            status: true,
+            type: true,
+            created_at: true,
+            source: { select: { id: true, name: true, status: true } },
+            activity: { select: { id: true, name: true, status: true } },
+            country: { select: { id: true, name: true } },
+            city: { select: { id: true, name: true } },
+          },
+        }),
+        prisma.lead.findMany({
+          where: { ...where, type: 'sales' },
+          orderBy: { created_at: 'desc' },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            status: true,
+            type: true,
+            created_at: true,
+            source: { select: { id: true, name: true, status: true } },
+            activity: { select: { id: true, name: true, status: true } },
+            country: { select: { id: true, name: true } },
+            city: { select: { id: true, name: true } },
+          },
+        }),
       ]);
-
       return { company_leads, my_leads };
     };
 
@@ -49,21 +60,10 @@ export const viewAllLeads = asyncHandler(async (req, res) => {
       fetchLeads({
         status: 'default'
       }),
-      fetchLeads({
-        status: { $in: ['intersted'] },
-        transfer: false,
-      }),
-       fetchLeads({
-        status: { $in: ['negotiation'] },
-        transfer: false,
-      }),
-      fetchLeads({
-        status: { $in: ['intersted', 'negotiation', 'demo_request', 'demo_done', 'approve', 'reject'] },
-        transfer: true,
-      }),
-      fetchLeads({
-        status: { $in: ['demo_request', 'demo_done'] },
-      }),
+      fetchLeads({ status: 'intersted', transfer: false }),
+      fetchLeads({ status: 'negotiation', transfer: false }),
+      fetchLeads({ transfer: true }),
+      fetchLeads({ status: { in: ['demo_request', 'demo_done'] } }),
       fetchLeads({
         status: 'approve',
       }),
@@ -231,14 +231,24 @@ export const viewRejectLead = asyncHandler(async (req, res) => {
 
 export const getLeadById = asyncHandler(async (req, res) => {
   try { 
-    const id = req.params.id;
-    const lead = await Lead.findOne({ _id: id, isDeleted: false })
-      .select('-isDeleted')
-      .populate({ path: 'activity_id', select: 'name status', match: { isDeleted: false } })
-      .populate({ path: 'source_id', select: 'name status', match: { isDeleted: false } })
-      .populate({ path: 'sales_id', select: 'name', match: { isDeleted: false } })
-      .populate({ path: 'country', select: 'name', match: { isDeleted: false } })
-      .populate({ path: 'city', select: 'name', match: { isDeleted: false } });
+    const id = Number(req.params.id);
+    const lead = await prisma.lead.findFirst({
+      where: { id, isDeleted: false },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        status: true,
+        type: true,
+        created_at: true,
+        transfer: true,
+        activity: { select: { id: true, name: true, status: true } },
+        source: { select: { id: true, name: true, status: true } },
+        sales: { select: { id: true, name: true } },
+        country: { select: { id: true, name: true } },
+        city: { select: { id: true, name: true } },
+      }
+    });
 
     return res.status(200).json({ lead });
   } catch (error) {
@@ -248,75 +258,60 @@ export const getLeadById = asyncHandler(async (req, res) => {
 
 export const createLead = asyncHandler(async (req, res) => {
   try {
-    const userId = req.currentUser.id;
+    const userId = Number(req.currentUser.id);
     const { name, phone, country, city, activity_id, source_id } = req.body; 
 
-    
     if (!name || !phone || !country || !city || !activity_id) {
       return ErrorResponse(res, 400, { message: 'All fields are required: name, phone, country, city, activity_id' });
     }
 
-    
-    const activity = await Activity.findById(activity_id);
-    if (!activity) {
-      return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
+    const activity = await prisma.activity.findUnique({ where: { id: Number(activity_id) } });
+    if (!activity) return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
+
+    const countryExists = await prisma.country.findUnique({ where: { id: Number(country) } });
+    if (!countryExists) return ErrorResponse(res, 400, { message: 'Invalid country' });
+
+    const cityExists = await prisma.city.findFirst({ where: { id: Number(city), country_id: Number(country), isDeleted: false } });
+    if (!cityExists) return ErrorResponse(res, 400, { message: 'Invalid city or city does not belong to selected country' });
+
+    const existingLead = await prisma.lead.findFirst({ where: { phone, isDeleted: false } });
+    if (existingLead) return ErrorResponse(res, 400, { message: 'Lead with this phone number already exists' });
+
+    if (source_id) {
+      const source = await prisma.source.findUnique({ where: { id: Number(source_id) } });
+      if (!source) return ErrorResponse(res, 400, { message: 'Invalid source_id' });
     }
 
-
-    const countryExists = await Country.findById(country);
-    if (!countryExists) {
-      return ErrorResponse(res, 400, { message: 'Invalid country' });
-    }
-
-    
-    const cityExists = await City.findOne({
-      _id: city,
-      country: country,
-      isDeleted: false
+    const lead = await prisma.lead.create({
+      data: {
+        name,
+        phone,
+        country_id: Number(country),
+        city_id: Number(city),
+        type: 'sales',
+        sales_id: userId,
+        status: 'default',
+        activity_id: Number(activity_id),
+        source_id: source_id ? Number(source_id) : null,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        status: true,
+        type: true,
+        created_at: true,
+        country: { select: { id: true, name: true } },
+        city: { select: { id: true, name: true } },
+        activity: { select: { id: true, name: true } },
+        source: { select: { id: true, name: true } },
+      }
     });
-    if (!cityExists) {
-      return ErrorResponse(res, 400, { message: 'Invalid city or city does not belong to selected country' });
-    }
-
-    // Check if phone already exists
-    const existingLead = await Lead.findOne({ 
-      phone, 
-      isDeleted: false 
-    });
-    if (existingLead) {
-      return ErrorResponse(res, 400, { message: 'Lead with this phone number already exists' });
-    }
-
-     // Check source_id exists if provided
-  if (source_id) {
-    const source = await Source.findById(source_id);
-    if (!source) {
-      return ErrorResponse(res, 400, { message: 'Invalid source_id' });
-    }
-  }
-    
-    const lead = await Lead.create({
-      name,
-      phone,
-      country,
-      city,
-      type: 'sales',
-      sales_id: userId,
-      status: 'default',
-      activity_id,
-      source_id
-    });
-
-    const populatedLead = await Lead.findById(lead._id)
-      .populate('country', 'name')
-      .populate('city', 'name')
-      .populate('activity_id', 'name')
-      .populate('source_id', 'name');
 
     return res.status(201).json({ 
       success: true,
       message: 'Lead created successfully',
-      data: populatedLead
+      data: lead
     });
 
   } catch (error) {
@@ -326,94 +321,78 @@ export const createLead = asyncHandler(async (req, res) => {
 
 export const updateLead = asyncHandler(async (req, res) => {
     try {
-        const userId = req.currentUser.id;
-        const id = req.params.id;
+        const userId = Number(req.currentUser.id);
+        const id = Number(req.params.id);
         
-      
-        const lead = await Lead.findById(id);
+        const lead = await prisma.lead.findUnique({ where: { id } });
         
         if (!lead) {
             return ErrorResponse(res, 404, { message: 'Lead not found' });
         }
 
-        
-        if (lead.sales_id.toString() !== userId) {
+        if (lead.sales_id !== userId) {
             return ErrorResponse(res, 403, { message: 'You are not authorized to update this lead' });
         }
 
         const { name, phone, country, city, status, activity_id, source_id } = req.body;
 
-        
         if (activity_id) {
-            const activity = await Activity.findById(activity_id);
-            if (!activity) {
-                return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
-            }
+            const activity = await prisma.activity.findUnique({ where: { id: Number(activity_id) } });
+            if (!activity) return ErrorResponse(res, 400, { message: 'Invalid activity_id' });
         }
 
-      
         if (country) {
-            const countryExists = await Country.findById(country);
-            if (!countryExists) {
-                return ErrorResponse(res, 400, { message: 'Invalid country' });
-            }
+            const countryExists = await prisma.country.findUnique({ where: { id: Number(country) } });
+            if (!countryExists) return ErrorResponse(res, 400, { message: 'Invalid country' });
         }
 
-        
         if (city) {
-            const selectedCountry = country || lead.country;
-            const cityExists = await City.findOne({
-                _id: city,
-                country: selectedCountry,
-                isDeleted: false
-            });
-            if (!cityExists) {
-                return ErrorResponse(res, 400, { message: 'Invalid city or city does not belong to selected country' });
-            }
+            const selectedCountry = Number(country) || lead.country_id;
+            const cityExists = await prisma.city.findFirst({ where: { id: Number(city), country_id: selectedCountry, isDeleted: false } });
+            if (!cityExists) return ErrorResponse(res, 400, { message: 'Invalid city or city does not belong to selected country' });
         }
 
-        
         if (phone && phone !== lead.phone) {
-            const existingLead = await Lead.findOne({ 
-                phone, 
-                isDeleted: false,
-                _id: { $ne: id } 
-            });
-            if (existingLead) {
-                return ErrorResponse(res, 400, { message: 'Lead with this phone number already exists' });
-            }
+            const existingLead = await prisma.lead.findFirst({ where: { phone, isDeleted: false, NOT: { id } } });
+            if (existingLead) return ErrorResponse(res, 400, { message: 'Lead with this phone number already exists' });
         }
 
-        if(source_id) {
-          const source = await Source.findById(source_id);
-          if(!source) {
-            return ErrorResponse(res, 400, { message: 'Invalid source_id' });
+        if (source_id) {
+          const source = await prisma.source.findUnique({ where: { id: Number(source_id) } });
+          if (!source) return ErrorResponse(res, 400, { message: 'Invalid source_id' });
+        }
+
+        const sourceId = source_id ? Number(source_id) : lead.source_id;
+
+        const updated = await prisma.lead.update({
+          where: { id },
+          data: {
+            name: name ?? undefined,
+            phone: phone ?? undefined,
+            country_id: country ? Number(country) : undefined,
+            city_id: city ? Number(city) : undefined,
+            status: status ?? undefined,
+            activity_id: activity_id ? Number(activity_id) : undefined,
+            source_id: sourceId,
+          },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            status: true,
+            type: true,
+            created_at: true,
+            country: { select: { id: true, name: true } },
+            city: { select: { id: true, name: true } },
+            activity: { select: { id: true, name: true } },
+            source: { select: { id: true, name: true } },
           }
-        }
-
-        const sourceId = source_id || lead.source_id;
-
-        lead.name = name || lead.name;
-        lead.phone = phone || lead.phone;
-        lead.country = country || lead.country;
-        lead.city = city || lead.city;
-        lead.status = status || lead.status;
-        lead.activity_id = activity_id || lead.activity_id;
-        lead.source_id = sourceId;
-        
-        await lead.save();
-
-        
-        const populatedLead = await Lead.findById(lead._id)
-            .populate('country', 'name')
-            .populate('city', 'name')
-            .populate('activity_id', 'name')
-            .populate('source_id', 'name');
+        });
 
         return res.status(200).json({ 
             success: true,
             message: 'Lead updated successfully',
-            data: populatedLead
+            data: updated
         });
 
     } catch (error) {
@@ -424,16 +403,15 @@ export const updateLead = asyncHandler(async (req, res) => {
 
 export const deleteLead = asyncHandler(async (req, res) => {
   try {
-    const userId = req.currentUser.id; 
-    const id = req.params.id; 
-    const lead = await Lead.findOne({_id:id, sales_id: userId, type: 'sales', isDeleted: false});
+    const userId = Number(req.currentUser.id); 
+    const id = Number(req.params.id); 
+    const lead = await prisma.lead.findFirst({ where: { id, sales_id: userId, type: 'sales', isDeleted: false }});
   
     if (!lead) {
-      throw new ErrorResponse('Lead not found', 404);
+      return ErrorResponse(res, 404, { message: 'Lead not found' });
     }
 
-    lead.isDeleted = true;
-    await lead.save();
+    await prisma.lead.update({ where: { id }, data: { isDeleted: true } });
 
     return res.status(200).json({ 'success': 'You delete lead success' });
   } catch (error) {

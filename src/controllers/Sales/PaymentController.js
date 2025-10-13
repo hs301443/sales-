@@ -1,9 +1,4 @@
-import Payment from '../../models/modelschema/payment.js'; 
-import Sales from '../../models/modelschema/sales.js'; 
-import Product from '../../models/modelschema/product.js'; 
-import Offer from '../../models/modelschema/Offer.js'; 
-import Lead from '../../models/modelschema/lead.js'; 
-import PaymentMethod from '../../models/modelschema/paymentmethod.js';
+import prisma from '../../lib/prisma.js'; 
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 import { saveBase64Image } from '../../utils/handleImages.js';
@@ -19,40 +14,24 @@ export const viewPayment = asyncHandler(async (req, res) => {
       leads,
       payment_methods
     ] = await Promise.all([
-      Sales.find({
-        sales_id: sales_id,
-        isDeleted: false,
-      })  
-      .sort({sale_date: -1})
-      .populate({
-        path: 'offer_id',
-        match: { isDeleted: false },
-        populate: { path: 'product_id', match: { isDeleted: false } }
-      })
-      .populate({ path: 'lead_id', select: 'name phone', match: { isDeleted: false } })
-      .populate({ path: 'product_id', select: 'name', match: { isDeleted: false } })
-      .populate({
-        path: 'payment_id',
-        match: { isDeleted: false },
-        populate: { path: 'payment_method_id', select: 'name', match: { isDeleted: false } }
-      })
-      .lean(), 
+      prisma.sales.findMany({
+        where: { sales_id: Number(sales_id), isDeleted: false },
+        orderBy: { sale_date: 'desc' },
+        select: {
+          id: true,
+          sale_date: true,
+          status: true,
+          lead: { select: { id: true, name: true, phone: true } },
+          product: { select: { id: true, name: true } },
+          offer: { select: { id: true, name: true, product: { select: { id: true, name: true } } } },
+          payment: { select: { id: true, amount: true, proof_image: true, method: { select: { id: true, name: true } } } },
+        }
+      }), 
       
-      Product.find({status: true, isDeleted: false})
-      .select('_id name')
-      .lean(),
-      
-      Offer.find({ isDeleted: false})
-      .select('_id name')
-      .lean(),
-      
-      Lead.find({status: {$in: ['intersted', 'negotiation', 'demo_request', 'demo_done']}, isDeleted: false})
-      .select('_id name phone')
-      .lean(),
-      
-      PaymentMethod.find({ isDeleted: false })
-      .select('_id name')
-      .lean()
+      prisma.product.findMany({ where: { status: true, isDeleted: false }, select: { id: true, name: true } }),
+      prisma.offer.findMany({ where: { isDeleted: false }, select: { id: true, name: true } }),
+      prisma.lead.findMany({ where: { status: { in: ['intersted','negotiation','demo_request','demo_done'] }, isDeleted: false }, select: { id: true, name: true, phone: true } }),
+      prisma.paymentMethod.findMany({ where: { isDeleted: false }, select: { id: true, name: true } })
     ]);
 
      const transformedSales = allSales.map((item) => {
@@ -71,36 +50,16 @@ export const viewPayment = asyncHandler(async (req, res) => {
 });
 
     //lead options
-    const leadOptions = leads.map((lead) => {
-      return {
-        value: lead._id,
-        label: lead.name
-      };
-    });
+    const leadOptions = leads.map((lead) => ({ value: lead.id, label: lead.name }));
 
     //product options
-    const productOptions = products.map((product) => {
-      return {
-        value: product._id,
-        label: product.name
-      };
-    });
+    const productOptions = products.map((product) => ({ value: product.id, label: product.name }));
 
     //offer options
-    const offerOptions = offers.map((offer) => {
-      return {
-        value: offer._id,
-        label: offer.name
-      };
-    });
+    const offerOptions = offers.map((offer) => ({ value: offer.id, label: offer.name }));
 
     // payment method 
-    const paymentMethodOptions = payment_methods.map((paymentMethod) => {
-      return {
-        value: paymentMethod._id,
-        label: paymentMethod.name
-      };
-    });
+    const paymentMethodOptions = payment_methods.map((pm) => ({ value: pm.id, label: pm.name }));
 
     // Filter sales by status
     const pending = transformedSales.filter(sale => sale.status === 'Pending');
@@ -139,46 +98,18 @@ export const addPayment = asyncHandler(async (req, res) => {
     const folder = 'payments';
     const imageUrl = await saveBase64Image(base64, userId, req, folder);
 
-    // check if lead exist 
-    const lead = await Lead.findById(lead_id);
-    if (!lead) {
-      return ErrorResponse(res, 400, { message: 'Invalid lead_id' });
-    }
-    // check product id 
-    const product = await Product.findById(product_id);
-    if (!product) {
-      return ErrorResponse(res, 400, { message: 'Invalid product_id' });
-    }
-    // check offer id 
-    const offer = await Offer.findById(offer_id);
-    if (!offer) {
-      return ErrorResponse(res, 400, { message: 'Invalid offer_id' });
-    }
-    // check payment method id
-    const paymentMethod = await PaymentMethod.findById(payment_method_id);
-    if (!paymentMethod) {
-      return ErrorResponse(res, 400, { message: 'Invalid payment_method_id' });
-    }
+    const lead = await prisma.lead.findUnique({ where: { id: Number(lead_id) } });
+    if (!lead) return ErrorResponse(res, 400, { message: 'Invalid lead_id' });
+    const product = await prisma.product.findUnique({ where: { id: Number(product_id) } });
+    if (!product) return ErrorResponse(res, 400, { message: 'Invalid product_id' });
+    const offer = await prisma.offer.findUnique({ where: { id: Number(offer_id) } });
+    if (!offer) return ErrorResponse(res, 400, { message: 'Invalid offer_id' });
+    const paymentMethod = await prisma.paymentMethod.findUnique({ where: { id: Number(payment_method_id) } });
+    if (!paymentMethod) return ErrorResponse(res, 400, { message: 'Invalid payment_method_id' });
 
     
-    const payment = await Payment.create({
-      lead_id,
-      sales_id: userId,
-      product_id,
-      offer_id,
-      payment_method_id,
-      proof_image: imageUrl,
-      amount,
-    });
-    await Sales.create({
-      lead_id,
-      sales_id: userId,
-      product_id,
-      offer_id,
-      payment_id: payment._id,
-      item_type,
-      offer_id,
-    });
+    const payment = await prisma.payment.create({ data: { amount: Number(amount), payment_method_id: Number(payment_method_id), proof_image: imageUrl } });
+    await prisma.sales.create({ data: { lead_id: Number(lead_id), sales_id: Number(userId), product_id: Number(product_id), offer_id: Number(offer_id), payment_id: payment.id, item_type } });
 
     return res.status(200).json({ 'success' : 'You add payment success' });
   } catch (error) {

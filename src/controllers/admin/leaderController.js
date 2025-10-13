@@ -1,4 +1,5 @@
-import User from '../../models/modelschema/User.js';
+import prisma from '../../lib/prisma.js';
+import bcrypt from 'bcrypt';
 import asyncHandler from 'express-async-handler';
 import { NotFound } from '../../Errors/NotFound.js'
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
@@ -12,7 +13,7 @@ export const createLeader = asyncHandler(async (req, res) => {
   } = req.body;
 
   //check if email exist
-  const existingUser = await User.findOne({ email });
+  const existingUser = await prisma.user.findFirst({ where: { email } });
   if (existingUser) {
     return res.status(400).json({
       success: false,
@@ -20,81 +21,68 @@ export const createLeader = asyncHandler(async (req, res) => {
     });
   }
 
-  const leader = await User.create({
-    name,
-    email,
-    password,
-    role: 'Sales Leader',
-    status: status || 'Active',
+  const hashed = await bcrypt.hash(password, 10);
+  await prisma.user.create({
+    data: {
+      name,
+      email,
+      password: hashed,
+      role: 'Sales_Leader',
+      status: status || 'Active',
+    }
   });
-
-  User.leader_id = leader._id;
-
-  await leader.save(); 
 
   return SuccessResponse(res, { message: 'Leader created successfully' }, 201);
 });
 
 export const getAllLeaders = asyncHandler(async (req, res) => {
-  const leaders = await User.find({ role: 'Sales Leader', isDeleted: false })
-    .select('-password -__v -leader_id -isDeleted')
-    .populate({ path: 'target_id', select: 'name point status', match: { isDeleted: false } })
-    .sort({ created_at: -1 });
+  const leaders = await prisma.user.findMany({
+    where: { role: 'Sales_Leader', isDeleted: false },
+    orderBy: { created_at: 'desc' },
+    select: {
+      id: true, name: true, email: true, status: true, created_at: true,
+      target: { select: { id: true, name: true, point: true, status: true } },
+    }
+  });
 
   return SuccessResponse(res, { message: 'Leaders retrieved successfully', data: leaders }, 200);
 });
 
 export const getLeaderById = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const leader = await User.findOne({ _id: id, isDeleted: false })
-    .select('-password -__v -leader_id -isDeleted')
-    .populate({ path: 'target_id', select: 'name point status', match: { isDeleted: false } });
-
-  if (!leader) {
-    throw new NotFound('Leader not found');
-  }
-
+  const id = Number(req.params.id);
+  const leader = await prisma.user.findFirst({
+    where: { id, isDeleted: false },
+    select: {
+      id: true, name: true, email: true, status: true, created_at: true,
+      target: { select: { id: true, name: true, point: true, status: true } },
+    }
+  });
+  if (!leader) throw new NotFound('Leader not found');
   return SuccessResponse(res, { message: 'Leader retrieved successfully', data : [leader] }, 200);
 });
 
 export const updateLeader = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const leader = await User.findById(id);
+  const id = Number(req.params.id);
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing || existing.isDeleted) throw new NotFound('Leader not found');
 
-  if (!leader) {
-    throw new NotFound('Leader not found');
-  }
+  const { name, email, password, status } = req.body;
+  const data = {
+    name: name ?? undefined,
+    email: email ?? undefined,
+    role: 'Sales_Leader',
+    status: status ?? undefined,
+  };
+  if (password) data.password = await bcrypt.hash(password, 10);
 
-  const {
-    name,
-    email,
-    password,
-    status,
-  } = req.body;
-
-  leader.name = name || leader.name;
-  leader.email = email || leader.email;
-  if (password) {
-    leader.password = password;
-  }
-  leader.role = 'Sales Leader';
-  leader.status = status || leader.status;
-
-  await leader.save();
-
+  await prisma.user.update({ where: { id }, data });
   return SuccessResponse(res, { message: 'Leader updated successfully' }, 200);
 });
 
 export const deleteLeader = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const leader = await User.findById(id);
-
-  if (!leader || leader.isDeleted) {
-    throw new NotFound('Leader not found');
-  }
-
-  leader.isDeleted = true;
-  await leader.save();
-
+  const id = Number(req.params.id);
+  const leader = await prisma.user.findUnique({ where: { id } });
+  if (!leader || leader.isDeleted) throw new NotFound('Leader not found');
+  await prisma.user.update({ where: { id }, data: { isDeleted: true } });
   return SuccessResponse(res, { message: 'Leader deleted successfully' }, 200);
 });

@@ -1,35 +1,42 @@
-import Product from '../../models/modelschema/product.js'; 
-import Offer from '../../models/modelschema/Offer.js';
+import prisma from '../../lib/prisma.js';
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
 export const viewProduct = asyncHandler(async (req, res) => {
-   const products = await Product.find({ status: true , isDeleted: false })
-    .select('-isDeleted')
-    .sort({ created_at: -1 })
-  
-    const offers = await Offer.find({
-      isDeleted: false,
-      product_id: { $in: products.map(p => p._id) }
-    }).select('product_id name discount_type discount_amount start_date end_date');
+   const products = await prisma.product.findMany({
+     where: { status: true, isDeleted: false },
+     orderBy: { created_at: 'desc' },
+     select: {
+       id: true,
+       name: true,
+       description: true,
+       subscription_type: true,
+       price: true,
+       setup_fees: true,
+       status: true,
+       created_at: true,
+       offers: {
+         where: { isDeleted: false },
+         orderBy: { created_at: 'desc' },
+         take: 1,
+         select: { id: true, name: true, price: true, created_at: true },
+       }
+     }
+   });
 
-    const productMap = products.map(product => {
-      const offer = offers.find(o => o.product_id.toString() === product._id.toString());
-      return {
-        ...product.toObject(),
-        offer: offer ? {
-          name: offer.name,
-          discount_type: offer.discount_type,
-          discount_amount: offer.discount_amount,
-          //format date as YYYY-MM-DD
-          start_date: offer.start_date.toISOString().split('T')[0],
-          end_date: offer.end_date.toISOString().split('T')[0],
-        } : null
-      };
-    });
+   const mapped = products.map(p => ({
+     ...p,
+     offer: p.offers[0] ? {
+       name: p.offers[0].name,
+       discount_type: 'amount',
+       discount_amount: p.offers[0].price,
+       start_date: p.offers[0].created_at.toISOString().split('T')[0],
+       end_date: p.offers[0].created_at.toISOString().split('T')[0],
+     } : null
+   }));
 
   return SuccessResponse(res, { 
     message: 'Products retrieved successfully', 
-    data: productMap 
+    data: mapped 
   }, 200);
 });

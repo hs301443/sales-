@@ -1,13 +1,11 @@
-import Sales from '../../models/modelschema/sales.js'; 
+import prisma from '../../lib/prisma.js'; 
 import asyncHandler from 'express-async-handler';
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
 
 export const viewSales = asyncHandler(async (req, res) => {
   try {
-    const sales = await Sales.find({status: true})
-    .select('name description price_month price_quarter price_year setup_fees')
-
-    return res.status(200).json({ products });
+    const sales = await prisma.sales.findMany({ where: { isDeleted: false }, orderBy: { sale_date: 'desc' } });
+    return res.status(200).json({ sales });
   } catch (error) {
     return ErrorResponse(res, error.message, 400);
   }

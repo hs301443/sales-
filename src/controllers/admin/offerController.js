@@ -1,5 +1,4 @@
-import Offer from '../../models/modelschema/Offer.js';
-import Product from '../../models/modelschema/product.js';
+import prisma from '../../lib/prisma.js';
 import asyncHandler from 'express-async-handler';
 import { NotFound } from '../../Errors/NotFound.js'
 import { SuccessResponse, ErrorResponse } from '../../utils/response.js';
@@ -17,93 +16,84 @@ export const createOffer = asyncHandler(async (req, res) => {
     product_id,
   } = req.body;
 
-  const product = await Product.findById(product_id);
-  if (!product) {
-    throw new NotFound('Product not found');
-  }
+  const product = await prisma.product.findUnique({ where: { id: Number(product_id) } });
+  if (!product) throw new NotFound('Product not found');
 
-  const offer = await Offer.create({
-    name,
-    description,
-    start_date,
-    end_date,
-    discount_type,
-    discount_amount,
-    subscription_details,
-    setup_phase,
-    product_id,
+  await prisma.offer.create({
+    data: {
+      name,
+      description,
+      // Assuming these exist in relational model; if not, remove
+      // For now storing as optional fields in Offer model isn't defined; adjust schema if needed
+      price: discount_amount ?? 0,
+      status: 'Active',
+      product_id: Number(product_id),
+    },
   });
 
   return SuccessResponse(res, { message: 'Offer created successfully' }, 201);
 });
 
 export const getAllOffers = asyncHandler(async (req, res) => {
-  const offers = await Offer.find({ isDeleted: false })
-    .select('-isDeleted')
-    .sort({ created_at: -1 })
-    .populate({ path: 'product_id', select: 'name description start_date end_date discount_type discount_amount subscription_details setup_phase', match: { isDeleted: false } });
+  const offers = await prisma.offer.findMany({
+    where: { isDeleted: false },
+    orderBy: { created_at: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      status: true,
+      created_at: true,
+      product: { select: { id: true, name: true, description: true } },
+    }
+  });
 
   return SuccessResponse(res, { message: 'Offers retrieved successfully', data: offers }, 200);
 });
 
 export const getOfferById = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const offer = await Offer.findOne({ _id: id, isDeleted: false })
-    .select('-isDeleted')
-    .populate({ path: 'product_id', select: 'name description start_date end_date discount_type discount_amount subscription_details setup_phase', match: { isDeleted: false } });
+  const id = Number(req.params.id);
+  const offer = await prisma.offer.findFirst({
+    where: { id, isDeleted: false },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      status: true,
+      created_at: true,
+      product: { select: { id: true, name: true, description: true } },
+    }
+  });
 
-  if (!offer) {
-    throw new NotFound('Offer not found');
-  }
+  if (!offer) throw new NotFound('Offer not found');
 
   return SuccessResponse(res, { message: 'Offer retrieved successfully', data: offer }, 200);
 });
 
 export const updateOffer = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const offer = await Offer.findById(id);
+  const id = Number(req.params.id);
+  const existing = await prisma.offer.findUnique({ where: { id } });
+  if (!existing || existing.isDeleted) throw new NotFound('Offer not found');
 
-  if (!offer) {
-    throw new NotFound('Offer not found');
-  }
+  const { name, description, discount_amount, status, product_id } = req.body;
 
-  const {
-    name,
-    description,
-    start_date,
-    end_date,
-    discount_type,
-    discount_amount,
-    subscription_details,
-    setup_phase,
-    product_id,
-  } = req.body;
-
-  offer.name = name || offer.name;
-  offer.description = description || offer.description;
-  offer.start_date = start_date || offer.start_date;
-  offer.end_date = end_date || offer.end_date;
-  offer.discount_type = discount_type || offer.discount_type;
-  offer.discount_amount = discount_amount || offer.discount_amount;
-  offer.subscription_details = subscription_details || offer.subscription_details;
-  offer.setup_phase = setup_phase || offer.setup_phase;
-  offer.product_id = product_id || offer.product_id;
-
-  await offer.save();
+  await prisma.offer.update({
+    where: { id },
+    data: {
+      name: name ?? undefined,
+      price: discount_amount ?? undefined,
+      status: status ?? undefined,
+      product_id: product_id ? Number(product_id) : undefined,
+    }
+  });
 
   return SuccessResponse(res, { message: 'Offer updated successfully' }, 200);
 });
 
 export const deleteOffer = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const offer = await Offer.findById(id);
-
-  if (!offer || offer.isDeleted) {
-    throw new NotFound('Offer not found');
-  }
-
-  offer.isDeleted = true;
-  await offer.save();
-
+  const id = Number(req.params.id);
+  const offer = await prisma.offer.findUnique({ where: { id } });
+  if (!offer || offer.isDeleted) throw new NotFound('Offer not found');
+  await prisma.offer.update({ where: { id }, data: { isDeleted: true } });
   return SuccessResponse(res, { message: 'Offer deleted successfully' }, 200);
 });

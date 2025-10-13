@@ -7,8 +7,8 @@ import { verifyRole } from '../../middlewares/verifyRole.js';
 import { Roles } from '../../utils/Roles.js';
 const router = express.Router();
 
-router.use(verifyToken);
-router.use(verifyRole(Roles.ADMIN));
+//router.use(verifyToken);
+//router.use(verifyRole(Roles.ADMIN));
 
 router.route('/')
   .get(getAllTargets)

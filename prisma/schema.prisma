@@ -1,0 +1,309 @@
+// Prisma schema generated to migrate from MongoDB/Mongoose to MySQL
+// 1) Set DATABASE_URL in your .env to a MySQL connection string
+// 2) Run: npx prisma generate && npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  Salesman
+  Sales_Leader
+  Admin
+}
+
+enum LeadType {
+  sales
+  company
+}
+
+enum LeadStatus {
+  default
+  intersted
+  negotiation
+  demo_request
+  demo_done
+  reject
+  approve
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  name       String
+  email      String    @unique
+  password   String
+  role       UserRole
+  status     String?
+  target_id  Int?      @map("target_id")
+  leader_id  Int?      @map("leader_id")
+  created_at DateTime  @default(now()) @map("created_at")
+  isDeleted  Boolean   @default(false) @map("isDeleted")
+
+  target     Target?   @relation(fields: [target_id], references: [id])
+  leader     User?     @relation("UserLeader", fields: [leader_id], references: [id])
+  team       User[]    @relation("UserLeader")
+  leads      Lead[]    @relation("LeadSales")
+  sales      Sales[]
+  scheduledContacts ScheduledContact[]
+  popupOfferReads   PopupOfferRead[]
+  salesPoints       SalesPoint[]
+
+  @@map("users")
+}
+
+model Target {
+  id        Int     @id @default(autoincrement())
+  name      String
+  point     Int
+  status    String?
+  isDeleted Boolean @default(false) @map("isDeleted")
+
+  users     User[]
+
+  @@map("targets")
+}
+
+model Country {
+  id        Int      @id @default(autoincrement())
+  name      String
+  isDeleted Boolean  @default(false) @map("isDeleted")
+  cities    City[]
+  leads     Lead[]
+
+  @@map("countries")
+}
+
+model City {
+  id         Int      @id @default(autoincrement())
+  name       String
+  country_id Int      @map("country")
+  isDeleted  Boolean  @default(false) @map("isDeleted")
+
+  country    Country  @relation(fields: [country_id], references: [id])
+  leads      Lead[]
+
+  @@map("cities")
+}
+
+model Source {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String?
+  created_at DateTime @default(now()) @map("created_at")
+  isDeleted Boolean   @default(false) @map("isDeleted")
+
+  leads     Lead[]
+
+  @@map("sources")
+}
+
+model Activity {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String?
+  isDeleted Boolean   @default(false) @map("isDeleted")
+
+  leads     Lead[]
+
+  @@map("activities")
+}
+
+model Product {
+  id                Int      @id @default(autoincrement())
+  name              String
+  description       String?
+  subscription_type String
+  price             Float
+  setup_fees        Float    @default(0)
+  status            Boolean  @default(true)
+  created_at        DateTime @default(now()) @map("created_at")
+  isDeleted         Boolean  @default(false) @map("isDeleted")
+
+  sales             Sales[]
+  offers            Offer[]
+
+  @@map("products")
+}
+
+model Offer {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  status      String?
+  created_at  DateTime @default(now()) @map("created_at")
+  isDeleted   Boolean  @default(false) @map("isDeleted")
+
+  sales       Sales[]
+  product     Product? @relation(fields: [product_id], references: [id])
+  product_id  Int?     @map("product_id")
+
+  @@unique([product_id, name])
+
+
+  @@map("offers")
+}
+
+model PaymentMethod {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String?
+  description String?
+  logo_url  String?
+  isDeleted Boolean  @default(false) @map("isDeleted")
+
+  payments  Payment[]
+
+  @@map("payment_methods")
+}
+
+model Payment {
+  id                Int            @id @default(autoincrement())
+  amount            Float
+  payment_date      DateTime       @default(now())
+  payment_method_id Int            @map("payment_method_id")
+  proof_image       String?
+  isDeleted         Boolean        @default(false) @map("isDeleted")
+
+  method            PaymentMethod  @relation(fields: [payment_method_id], references: [id])
+  sales             Sales[]
+
+  @@map("payments")
+}
+
+model Lead {
+  id          Int         @id @default(autoincrement())
+  name        String
+  phone       String      @unique
+  type        LeadType
+  status      LeadStatus  @default(default)
+  sales_id    Int?        @map("sales_id")
+  activity_id Int?        @map("activity_id")
+  source_id   Int?        @map("source_id")
+  country_id  Int?        @map("country")
+  city_id     Int?        @map("city")
+  transfer    Boolean     @default(false)
+  created_at  DateTime    @default(now()) @map("created_at")
+  isDeleted   Boolean     @default(false) @map("isDeleted")
+
+  sales       User?       @relation("LeadSales", fields: [sales_id], references: [id])
+  activity    Activity?   @relation(fields: [activity_id], references: [id])
+  source      Source?     @relation(fields: [source_id], references: [id])
+  country     Country?    @relation(fields: [country_id], references: [id])
+  city        City?       @relation(fields: [city_id], references: [id])
+  salesList   Sales[]
+
+  scheduledContacts ScheduledContact[]
+
+
+  @@map("leads")
+}
+
+model Sales {
+  id         Int      @id @default(autoincrement())
+  sale_date  DateTime @default(now())
+  lead_id    Int?     @map("lead_id")
+  sales_id   Int?     @map("sales_id")
+  product_id Int?     @map("product_id")
+  offer_id   Int?     @map("offer_id")
+  payment_id Int?     @map("payment_id")
+  status     SaleStatus @default(Pending)
+  item_type  ItemType
+  isDeleted  Boolean  @default(false) @map("isDeleted")
+
+  lead       Lead?    @relation(fields: [lead_id], references: [id])
+  salesUser  User?    @relation(fields: [sales_id], references: [id])
+  product    Product? @relation(fields: [product_id], references: [id])
+  offer      Offer?   @relation(fields: [offer_id], references: [id])
+  payment    Payment? @relation(fields: [payment_id], references: [id])
+
+  @@map("sales")
+}
+
+model ScheduledContact {
+  id           Int      @id @default(autoincrement())
+  lead_id      Int      @map("lead_id")
+  sales_id     Int      @map("sales_id")
+  contact_date DateTime @map("contact_date")
+  contact_time String   @map("contact_time")
+  notes        String?  
+  status       Boolean  @default(false)
+  isDeleted    Boolean  @default(false) @map("isDeleted")
+  created_at   DateTime @default(now()) @map("created_at")
+
+  lead         Lead     @relation(fields: [lead_id], references: [id])
+  salesUser    User     @relation(fields: [sales_id], references: [id])
+
+  @@map("scheduled_contacts")
+}
+
+model PopupOffer {
+  id         Int      @id @default(autoincrement())
+  title      String
+  image      String?
+  link       String?
+  status     Boolean  @default(true)
+  isDeleted  Boolean  @default(false) @map("isDeleted")
+  created_at DateTime @default(now()) @map("created_at")
+
+  reads      PopupOfferRead[]
+
+  @@map("popup_offers")
+}
+
+model PopupOfferRead {
+  id             Int        @id @default(autoincrement())
+  sales_id       Int        @map("sales_id")
+  popup_offer_id Int        @map("popup_offer_id")
+  isRead         Boolean    @default(false)
+  read_at        DateTime?  @default(now())
+
+  salesUser      User       @relation(fields: [sales_id], references: [id])
+  popupOffer     PopupOffer @relation(fields: [popup_offer_id], references: [id])
+
+  @@unique([sales_id, popup_offer_id])
+  @@map("popup_offer_reads")
+}
+
+enum SaleStatus {
+  Pending
+  Approve
+  Reject
+}
+
+enum ItemType {
+  Product
+  Offer
+}
+
+model Commission {
+  id              Int      @id @default(autoincrement())
+  point_threshold Int
+  amount          Float
+  type            String?
+  level_name      String?
+  isDeleted       Boolean  @default(false) @map("isDeleted")
+  created_at      DateTime @default(now()) @map("created_at")
+
+  @@map("commissions")
+}
+
+model SalesPoint {
+  id        Int     @id @default(autoincrement())
+  point     Int
+  month     Int
+  year      Int
+  sales_id  Int     @map("sales_id")
+  isDeleted Boolean @default(false) @map("isDeleted")
+
+  salesUser User    @relation(fields: [sales_id], references: [id])
+
+  @@map("sales_points")
+}
+
+
