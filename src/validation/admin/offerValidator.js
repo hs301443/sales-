@@ -25,5 +25,5 @@ export const updateOfferSchema = Joi.object({
   discount_amount: Joi.number().min(0).optional(),
   subscription_details: Joi.string().trim().optional().allow('', null),
   setup_phase: Joi.string().trim().optional().allow('', null),
-  product_id: Joi.string().hex().length(24).optional()
+  product_id: Joi.string().optional()
 });
