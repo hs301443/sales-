@@ -92,7 +92,7 @@ export const viewPayment = asyncHandler(async (req, res) => {
 export const addPayment = asyncHandler(async (req, res) => {
   try { 
       // sales_id
-    const {lead_id, product_id, offer_id, payment_method_id, amount, proof_image, item_type} = req.body;
+    const {lead_id, product_id, offer_id, payment_method_id, amount, proof_image} = req.body;
     const userId = req.currentUser.id;
     const base64 = req.body.proof_image;
     const folder = 'payments';
@@ -109,10 +109,10 @@ export const addPayment = asyncHandler(async (req, res) => {
 
     
     const payment = await prisma.payment.create({ data: { amount: Number(amount), payment_method_id: Number(payment_method_id), proof_image: imageUrl } });
-    await prisma.sales.create({ data: { lead_id: Number(lead_id), sales_id: Number(userId), product_id: Number(product_id), offer_id: Number(offer_id), payment_id: payment.id, item_type } });
+    await prisma.sales.create({ data: { lead_id: Number(lead_id), sales_id: Number(userId), product_id: Number(product_id), offer_id: Number(offer_id), payment_id: payment.id, item_type:'Product' } });
 
     return res.status(200).json({ 'success' : 'You add payment success' });
   } catch (error) {
-    return ErrorResponse(res, error.message, 400);
+    return ErrorResponse(res, 400, error.message);
   }
 }); 
