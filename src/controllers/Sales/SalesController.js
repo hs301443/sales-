@@ -7,6 +7,6 @@ export const viewSales = asyncHandler(async (req, res) => {
     const sales = await prisma.sales.findMany({ where: { isDeleted: false }, orderBy: { sale_date: 'desc' } });
     return res.status(200).json({ sales });
   } catch (error) {
-    return ErrorResponse(res, error.message, 400);
+    return ErrorResponse(res, 400 ,error.message);
   }
 });

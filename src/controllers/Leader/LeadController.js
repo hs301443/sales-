@@ -59,7 +59,7 @@ export const viewCompanyLead = asyncHandler(async (req, res) => {
 
     return res.status(200).json({ leads });
   } catch (error) {   
-    return ErrorResponse(res, error.message, 400);
+    return ErrorResponse(res, 400 ,error.message);
   }
 });
 

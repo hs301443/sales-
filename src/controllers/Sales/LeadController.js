@@ -77,7 +77,7 @@ export const viewAllLeads = asyncHandler(async (req, res) => {
       rejected
     });
   } catch (error) {
-    return ErrorResponse(res, error.message, 400);
+    return ErrorResponse(res, 400 ,error.message);
   }
 });
 
@@ -108,7 +108,7 @@ export const getLeadById = asyncHandler(async (req, res) => {
 
     return res.status(200).json({ lead });
   } catch (error) {
-    return ErrorResponse(res, error.message, 400);
+    return ErrorResponse(res, 400 ,error.message);
   }
 });
 
@@ -182,7 +182,7 @@ export const createLead = asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    return ErrorResponse(res, error.message, 400);
+    return ErrorResponse(res, 400 ,error.message);
   }
 });
 
@@ -275,7 +275,7 @@ export const updateLead = asyncHandler(async (req, res) => {
         });
 
     } catch (error) {
-        return ErrorResponse(res, error.message, 400);
+        return ErrorResponse(res, 400 ,error.message);
     }
 });
 
@@ -306,7 +306,7 @@ export const deleteLead = asyncHandler(async (req, res) => {
       message: 'Lead deleted successfully' 
     });
   } catch (error) {
-    return ErrorResponse(res, error.message, 400);
+    return ErrorResponse(res, 400 ,error.message);
   }
 });
 
