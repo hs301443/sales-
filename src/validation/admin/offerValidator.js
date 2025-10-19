@@ -13,7 +13,7 @@ export const createOfferSchema = Joi.object({
   }),
   subscription_details: Joi.string().trim().optional().allow('', null),
   setup_phase: Joi.string().trim().optional().allow('', null),
-  product_id: Joi.string().hex().length(24).required()
+  product_id: Joi.string().required()
 });
 
 export const updateOfferSchema = Joi.object({
