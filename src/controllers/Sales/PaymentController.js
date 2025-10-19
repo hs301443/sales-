@@ -34,20 +34,20 @@ export const viewPayment = asyncHandler(async (req, res) => {
       prisma.paymentMethod.findMany({ where: { isDeleted: false }, select: { id: true, name: true } })
     ]);
 
-     const transformedSales = allSales.map((item) => {
-  return {
-    _id: item._id,
-    lead_name: item.lead_id?.name || 'N/A',
-    lead_phone: item.lead_id?.phone || 'N/A',
-    product: item.product_id?.name || item.offer_id?.product_id?.name || 'N/A',
-    offer: item.offer_id?.name || 'N/A',
-    payment_method: item.payment_id?.payment_method_id?.name || 'N/A',
-    amount: item.payment_id?.amount || 0,
-    proof_image: item.payment_id?.proof_image || 'N/A',
-    status: item.status || 'Unknown',
-    sale_date: item.sale_date || 'N/A'
-  };
-});
+    const transformedSales = allSales.map((item) => {
+      return {
+        _id: item.id, // Changed from item._id to item.id
+        lead_name: item.lead?.name || 'N/A', // Changed from item.lead_id to item.lead
+        lead_phone: item.lead?.phone || 'N/A', // Changed from item.lead_id to item.lead
+        product: item.product?.name || item.offer?.product?.name || 'N/A', // Fixed nested access
+        offer: item.offer?.name || 'N/A', // Changed from item.offer_id to item.offer
+        payment_method: item.payment?.method?.name || 'N/A', // Fixed nested access
+        amount: item.payment?.amount || 0,
+        proof_image: item.payment?.proof_image || 'N/A',
+        status: item.status || 'Unknown',
+        sale_date: item.sale_date || 'N/A'
+      };
+    });
 
     //lead options
     const leadOptions = leads.map((lead) => ({ value: lead.id, label: lead.name }));
@@ -88,6 +88,7 @@ export const viewPayment = asyncHandler(async (req, res) => {
     });
   }
 });
+
 
 export const addPayment = asyncHandler(async (req, res) => {
   try { 
