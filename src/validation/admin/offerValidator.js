@@ -13,7 +13,7 @@ export const createOfferSchema = Joi.object({
   }),
   subscription_details: Joi.string().trim().optional().allow('', null),
   setup_phase: Joi.string().trim().optional().allow('', null),
-  product_id: Joi.string().required()
+  product_id: Joi.number().required()
 });
 
 export const updateOfferSchema = Joi.object({
@@ -25,5 +25,5 @@ export const updateOfferSchema = Joi.object({
   discount_amount: Joi.number().min(0).optional(),
   subscription_details: Joi.string().trim().optional().allow('', null),
   setup_phase: Joi.string().trim().optional().allow('', null),
-  product_id: Joi.string().optional()
+  product_id: Joi.number().optional()
 });
