@@ -152,7 +152,7 @@ model Offer {
 model PaymentMethod {
   id        Int      @id @default(autoincrement())
   name      String
-  status    String?
+  status    Boolean  @default(true)
   description String?
   logo_url  String?
   isDeleted Boolean  @default(false) @map("isDeleted")
