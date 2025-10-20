@@ -12,7 +12,7 @@ export const createPaymentMethod = asyncHandler(async (req, res) => {
     const folder = 'payment-methods';
     const imageUrl = await saveBase64Image(base64, userId, req, folder);
     const paymentMethod = await prisma.paymentMethod.create({
-      data: { name, description, status: status?.toString(), logo_url: imageUrl }
+      data: { name, description, status, logo_url: imageUrl }
     });
     return SuccessResponse(res, { message: 'Payment method created successfully', data: paymentMethod }, 201);
 
