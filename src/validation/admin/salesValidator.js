@@ -5,7 +5,7 @@ export const createSalesSchema = Joi.object().keys({
   email: Joi.string().required().email().trim(),
   password: Joi.string().required().min(6).trim(),
   status: Joi.string().optional().valid('Active', 'inactive'),
-  leader_id: Joi.number().required().trim(),
+  leader_id: Joi.number().required(),
 });
 
 export const updateSalesSchema = Joi.object().keys({
@@ -13,6 +13,6 @@ export const updateSalesSchema = Joi.object().keys({
   email: Joi.string().optional().email().trim(),
   password: Joi.string().optional().min(6).trim(),
   status: Joi.string().optional().valid('Active', 'inactive'),
-  leader_id: Joi.number().optional().trim(),
+  leader_id: Joi.number().optional(),
 });
 
