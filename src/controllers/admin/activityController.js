@@ -5,7 +5,7 @@ import { NotFound } from '../../Errors/NotFound.js';
 
 export const createActivity = asyncHandler(async (req, res) => {
   const { name, status } = req.body;
-  await prisma.activity.create({ data: { name, status: status ?? 'Active' } });
+  await prisma.activity.create({ data: { name, status} });
   return SuccessResponse(res, { message: 'Activity created successfully'}, 201);
 });
 

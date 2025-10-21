@@ -121,7 +121,7 @@ export const getAllLeads = asyncHandler(async (req, res) => {
 
   const [activeSales, activityOptions, sourceOptions, CountryOptions, CityOptions] = await Promise.all([
     prisma.user.findMany({ where: { role: 'Salesman', status: 'Active', isDeleted: false }, select: { id: true, name: true, email: true }, orderBy: { name: 'asc' } }),
-    prisma.activity.findMany({ where: { status: 'Active', isDeleted: false }, select: { id: true, name: true, status: true }, orderBy: { name: 'asc' } }),
+    prisma.activity.findMany({ where: { status: true, isDeleted: false }, select: { id: true, name: true, status: true }, orderBy: { name: 'asc' } }),
     prisma.source.findMany({ where: { status: 'Active', isDeleted: false }, select: { id: true, name: true, status: true }, orderBy: { name: 'asc' } }),
     prisma.country.findMany({ where: { isDeleted: false }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
     prisma.city.findMany({ where: { isDeleted: false }, select: { id: true, name: true, country_id: true }, orderBy: { name: 'asc' } }),

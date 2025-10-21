@@ -109,7 +109,7 @@ model Source {
 model Activity {
   id        Int      @id @default(autoincrement())
   name      String
-  status    String?
+  status    Boolean  @default(true)
   isDeleted Boolean   @default(false) @map("isDeleted")
 
   leads     Lead[]
