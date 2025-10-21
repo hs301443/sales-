@@ -26,11 +26,11 @@ export const createOffer = asyncHandler(async (req, res) => {
   
 
   if (discount_type === 'percentage' && (discount_amount <= 0 || discount_amount > 100)) {
-    throw new BadRequest('Percentage discount must be between 0 and 100');
+    throw new NotFound('Percentage discount must be between 0 and 100');
   }
 
   if (discount_type === 'fixed' && discount_amount <= 0) {
-    throw new BadRequest('Fixed discount must be greater than 0');
+    throw new NotFound('Fixed discount must be greater than 0');
   }
 
 
@@ -43,7 +43,7 @@ export const createOffer = asyncHandler(async (req, res) => {
   });
 
   if (existingOffer) {
-    throw new BadRequest('An offer with this name already exists for this product');
+    throw new NotFound('An offer with this name already exists for this product');
   }
 
   const offer = await prisma.offer.create({
