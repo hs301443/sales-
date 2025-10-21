@@ -16,22 +16,55 @@ export const createOffer = asyncHandler(async (req, res) => {
     product_id,
   } = req.body;
 
-  const product = await prisma.product.findUnique({ where: { id: Number(product_id) } });
+  const product = await prisma.product.findUnique({ 
+    where: { id: Number(product_id) } 
+  });
   if (!product) throw new NotFound('Product not found');
 
-  await prisma.offer.create({
+  const startDate = new Date(start_date);
+  const endDate = new Date(end_date);
+  
+
+  if (discount_type === 'percentage' && (discount_amount <= 0 || discount_amount > 100)) {
+    throw new BadRequest('Percentage discount must be between 0 and 100');
+  }
+
+  if (discount_type === 'fixed' && discount_amount <= 0) {
+    throw new BadRequest('Fixed discount must be greater than 0');
+  }
+
+
+  const existingOffer = await prisma.offer.findFirst({
+    where: {
+      product_id: Number(product_id),
+      name: name,
+      isDeleted: false
+    }
+  });
+
+  if (existingOffer) {
+    throw new BadRequest('An offer with this name already exists for this product');
+  }
+
+  const offer = await prisma.offer.create({
     data: {
       name,
       description,
-      // Assuming these exist in relational model; if not, remove
-      // For now storing as optional fields in Offer model isn't defined; adjust schema if needed
-      price: discount_amount ?? 0,
-      status: 'Active',
+      start_date: startDate,
+      end_date: endDate,
+      discount_type,
+      discount_amount: Number(discount_amount),
+      subscription_details,
+      setup_phase,
       product_id: Number(product_id),
+      status: 'Active'
     },
   });
 
-  return SuccessResponse(res, { message: 'Offer created successfully' }, 201);
+  return SuccessResponse(res, { 
+    message: 'Offer created successfully',
+    data: offer 
+  }, 201);
 });
 
 export const getAllOffers = asyncHandler(async (req, res) => {

@@ -31,6 +31,10 @@ enum LeadStatus {
   reject
   approve
 }
+enum DiscountType{
+  percentage
+  value
+}
 
 model User {
   id         Int       @id @default(autoincrement())
@@ -131,21 +135,24 @@ model Product {
 }
 
 model Offer {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  price       Float
-  status      String?
-  created_at  DateTime @default(now()) @map("created_at")
-  isDeleted   Boolean  @default(false) @map("isDeleted")
+  id                  Int       @id @default(autoincrement())
+  name                String
+  description         String?
+  discount_type       DiscountType
+  discount_amount     Float
+  start_date          DateTime
+  end_date            DateTime
+  subscription_details String?
+  setup_phase         String?
+  status              String    @default("Active")
+  created_at          DateTime  @default(now()) @map("created_at")
+  isDeleted           Boolean   @default(false) @map("isDeleted")
 
-  sales       Sales[]
-  product     Product? @relation(fields: [product_id], references: [id])
-  product_id  Int?     @map("product_id")
+  sales               Sales[]
+  product             Product?  @relation(fields: [product_id], references: [id])
+  product_id          Int?      @map("product_id")
 
   @@unique([product_id, name])
-
-
   @@map("offers")
 }
 
