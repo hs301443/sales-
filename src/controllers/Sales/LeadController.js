@@ -620,7 +620,7 @@ export const getAllCountryAndCity = asyncHandler(async (req, res) => {
       name: true,
       country: {
         select: {
-          id: true
+          id: true,
           name: true
         }
       }
