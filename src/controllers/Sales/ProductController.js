@@ -19,7 +19,7 @@ export const viewProduct = asyncHandler(async (req, res) => {
          where: { isDeleted: false },
          orderBy: { created_at: 'desc' },
          take: 1,
-         select: { id: true, name: true, price: true, created_at: true },
+         select: { id: true, name: true, discount_amount: true, created_at: true },
        }
      }
    });
@@ -29,7 +29,7 @@ export const viewProduct = asyncHandler(async (req, res) => {
      offer: p.offers[0] ? {
        name: p.offers[0].name,
        discount_type: 'amount',
-       discount_amount: p.offers[0].price,
+       discount_amount: p.offers[0].discount_amount,
        start_date: p.offers[0].created_at.toISOString().split('T')[0],
        end_date: p.offers[0].created_at.toISOString().split('T')[0],
      } : null
