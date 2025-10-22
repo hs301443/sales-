@@ -6,8 +6,18 @@ export const viewLead = asyncHandler(async (req, res) => {
   try {
     const userId = req.currentUser.id;
     const leads = await prisma.lead.findMany({
-      where: { isDeleted: false, sales: { leader_id: Number(userId), isDeleted: false } },
-      select: { id: true, name: true, status: true, sales: { select: { id: true, name: true, leader: { select: { id: true, name: true } } } } }
+      where: { 
+        isDeleted: false, 
+        sales: { leader_id: Number(userId), isDeleted: false } },
+      select: { 
+        id: true, 
+        name: true, 
+        status: true, 
+        sales: { select: { id: true, name: true, 
+          leader: { select: { id: true, name: true } }} },
+        country: { select: { id: true, name: true } },
+        city: { select: { id: true, name: true } },
+      }  
     });
 
     // sales options 
