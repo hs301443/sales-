@@ -5,7 +5,7 @@ export const createleadValidation = Joi.object({
   phone: Joi.string().required().trim(),
   country: Joi.string().required().trim(),
   city: Joi.string().required().trim(),
-  sales_id: Joi.number().required(),
+  //sales_id: Joi.number().required(),
   activity_id: Joi.number().optional(),
   source_id: Joi.number().required(),
 });
@@ -16,7 +16,7 @@ export const updateleadValidation = Joi.object({
   country: Joi.string().optional().trim(),
   city: Joi.string().optional().trim(),
   status: Joi.string().optional().valid('default','intersted', 'negotiation', 'demo_request', 'demo_done', 'reject', 'approve').trim(),
-  sales_id: Joi.number().optional(),
+ // sales_id: Joi.number().optional(),
   activity_id: Joi.number().optional(),
   source_id: Joi.number().optional(),
 });
