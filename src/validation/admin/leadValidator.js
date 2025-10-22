@@ -7,9 +7,9 @@ export const createLeadSchema = Joi.object().keys({
   city: Joi.string().optional().trim(),
   type: Joi.string().required().valid('sales', 'company').trim(),
   status: Joi.string().optional().valid('default','intersted', 'negotiation', 'demo_request', 'demo_done', 'reject', 'approve').trim(),
-  sales_id: Joi.string().required().trim(),
-  activity_id: Joi.string().optional().trim(),
-  source_id: Joi.string().optional().trim(),
+  sales_id: Joi.number().required(),
+  activity_id: Joi.number().optional(),
+  source_id: Joi.number().optional(),
 });
 
 export const updateLeadSchema = Joi.object().keys({
@@ -19,8 +19,8 @@ export const updateLeadSchema = Joi.object().keys({
   city: Joi.string().optional().trim(),
   type: Joi.string().optional().valid('sales', 'company').trim(),
   status: Joi.string().optional().valid('default','intersted', 'negotiation', 'demo_request', 'demo_done', 'reject', 'approve').trim(),
-  sales_id: Joi.string().optional().trim(),
-  activity_id: Joi.string().optional().trim(),
-  source_id: Joi.string().optional().trim(),
+  sales_id: Joi.number().optional(),
+  activity_id: Joi.number().optional(),
+  source_id: Joi.number().optional(),
 });
 
